@@ -1,0 +1,8 @@
+{
+  "name": "Serenity MedSpa Voice Agent",
+  "description": "A sophisticated, voice-activated booking assistant for a MedSpa using Gemini Live API.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ]
+}

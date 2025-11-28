@@ -1,0 +1,54 @@
+-- Insert template business into Supabase
+-- This uses the complete JSON config from template-medspa.json
+
+INSERT INTO businesses (id, name, domain, config_json)
+VALUES (
+  'template-medspa',
+  'The Skin Agency',
+  'theskinagency.com',
+  '{
+    "id": "template-medspa",
+    "name": "The Skin Agency",
+    "tagline": "Luxury Aesthetics & Advanced Skin Care",
+    "services": [
+      {
+        "name": "Botox",
+        "description": "Botox injections to smooth fine lines.",
+        "price": 250,
+        "timeMinutes": 30
+      },
+      {
+        "name": "Laser Hair Removal",
+        "description": "Permanent hair reduction.",
+        "price": 300,
+        "timeMinutes": 45
+      }
+    ],
+    "locations": [
+      {
+        "name": "Glendale",
+        "address": "1005 S Central Ave, Glendale CA",
+        "phone": "818-222-1111"
+      }
+    ],
+    "hours": {
+      "mon-sun": "9am–6pm"
+    },
+    "faqs": [
+      {
+        "q": "Does Botox hurt?",
+        "a": "Most patients experience minimal discomfort."
+      }
+    ],
+    "booking": {
+      "type": "mock",
+      "calendarUrl": "https://calendly.com/example",
+      "requiresPayment": false
+    },
+    "aiPersonality": {
+      "tone": "warm, friendly, informative",
+      "identity": "AI Receptionist"
+    }
+  }'::jsonb
+);
+

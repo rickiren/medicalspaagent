@@ -1,0 +1,55 @@
+-- Insert test business into Supabase
+-- This uses the complete JSON config from test-medspa.json
+
+INSERT INTO businesses (id, name, domain, config_json)
+VALUES (
+  'test-medspa',
+  'Beverly Hills Laser Clinic',
+  'beverlyhillslaser.com',
+  '{
+    "id": "test-medspa",
+    "name": "Beverly Hills Laser Clinic",
+    "tagline": "Elite Aesthetic Treatments",
+    "services": [
+      {
+        "name": "Laser Hair Removal",
+        "description": "Pain-free, long-lasting results",
+        "price": 299,
+        "timeMinutes": 30
+      },
+      {
+        "name": "Lip Filler",
+        "description": "Natural-looking volume enhancement",
+        "price": 799,
+        "timeMinutes": 45
+      }
+    ],
+    "locations": [
+      {
+        "name": "Main Office",
+        "address": "123 Wilshire Blvd, Beverly Hills",
+        "phone": "310-555-1234"
+      }
+    ],
+    "hours": {
+      "mon-fri": "9am–7pm",
+      "sat": "10am–5pm",
+      "sun": "closed"
+    },
+    "faqs": [
+      {
+        "q": "Is laser painful?",
+        "a": "Most clients describe it as mildly warm."
+      }
+    ],
+    "booking": {
+      "type": "mock",
+      "requiresPayment": false
+    },
+    "aiPersonality": {
+      "tone": "friendly",
+      "identity": "Sofia"
+    }
+  }'::jsonb
+);
+
