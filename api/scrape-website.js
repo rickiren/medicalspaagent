@@ -20,9 +20,9 @@ export default async function handler(req, res) {
     }
 
     // Import and run scraping pipeline
-    // Note: Vercel serverless functions need utils to be accessible
-    // Using relative path from api folder to utils folder
-    const { runScrapingPipeline } = await import('../utils/scrapingPipeline.ts');
+    // Vercel automatically transpiles TypeScript, so we can import .ts files
+    // Use relative path from api folder (one level up to project root, then into utils)
+    const { runScrapingPipeline } = await import('../utils/scrapingPipeline');
     const result = await runScrapingPipeline({
       url: websiteUrl,
       businessId,
