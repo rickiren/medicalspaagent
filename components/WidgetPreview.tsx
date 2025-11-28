@@ -21,24 +21,40 @@ const WidgetPreview: React.FC<WidgetPreviewProps> = ({ businessId, businessName,
     setError(null);
     console.log('[PREVIEW] Fetching business data for:', businessId);
     try {
-      const response = await fetch(`/api/businesses/${businessId}`);
-      console.log('[PREVIEW] API response status:', response.status, response.statusText);
+      // Try dedicated preview endpoint first, fallback to businesses endpoint
+      let response = await fetch(`/api/business/${businessId}/preview`);
+      console.log('[PREVIEW] Preview API response status:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        // Fallback to businesses endpoint
+        console.log('[PREVIEW] Preview endpoint failed, trying businesses endpoint...');
+        response = await fetch(`/api/businesses/${businessId}`);
+        console.log('[PREVIEW] Businesses API response status:', response.status, response.statusText);
+      }
+      
       if (!response.ok) {
         const errorText = await response.text();
         console.error('[PREVIEW] API error response:', errorText);
         throw new Error(`Failed to fetch business data: ${response.status} ${response.statusText}`);
       }
+      
       const data = await response.json();
       console.log('[PREVIEW] Fetched business data:', { 
         businessId, 
-        screenshotUrl: data.preview_screenshot_url,
-        screenshotUrlType: typeof data.preview_screenshot_url,
-        screenshotUrlLength: data.preview_screenshot_url?.length,
-        hasPreviewData: !!data.preview_data_json,
-        allKeys: Object.keys(data)
+        dataKeys: Object.keys(data),
+        screenshotUrl: data.screenshotUrl || data.preview_screenshot_url,
+        screenshotUrlType: typeof (data.screenshotUrl || data.preview_screenshot_url),
+        hasPreviewData: !!(data.previewData || data.preview_data_json),
+        fullData: data
       });
-      setPreviewScreenshotUrl(data.preview_screenshot_url || null);
-      setPreviewData(data.preview_data_json || null);
+      
+      // Handle both response formats (preview endpoint vs businesses endpoint)
+      const screenshotUrl = data.screenshotUrl || data.preview_screenshot_url || null;
+      const previewData = data.previewData || data.preview_data_json || null;
+      
+      console.log('[PREVIEW] Setting state:', { screenshotUrl, hasPreviewData: !!previewData });
+      setPreviewScreenshotUrl(screenshotUrl);
+      setPreviewData(previewData);
     } catch (err: any) {
       console.error('[PREVIEW] Error fetching business data:', err);
       console.error('[PREVIEW] Error details:', err.message, err.stack);
