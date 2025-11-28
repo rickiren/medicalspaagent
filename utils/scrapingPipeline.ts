@@ -50,9 +50,17 @@ export async function runScrapingPipeline(params: {
     try {
       const websiteUrl = params.url.startsWith('http') ? params.url : `https://${params.url}`;
       const useSupabaseStorage = !!process.env.VERCEL; // Use storage on Vercel
+      console.log('[PIPELINE] Starting screenshot capture:', {
+        websiteUrl,
+        businessId: params.businessId,
+        useSupabaseStorage,
+        isVercel: !!process.env.VERCEL
+      });
       screenshotUrl = await captureScreenshot(websiteUrl, params.businessId, useSupabaseStorage) || undefined;
+      console.log('[PIPELINE] Screenshot capture result:', { screenshotUrl: screenshotUrl || 'null' });
     } catch (screenshotError) {
-      console.error('Screenshot capture failed:', screenshotError);
+      console.error('[PIPELINE] Screenshot capture failed:', screenshotError);
+      console.error('[PIPELINE] Screenshot error details:', screenshotError.message);
       // Continue without screenshot - it's optional
     }
     

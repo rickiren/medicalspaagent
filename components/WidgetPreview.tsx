@@ -19,22 +19,30 @@ const WidgetPreview: React.FC<WidgetPreviewProps> = ({ businessId, businessName,
   const fetchBusinessData = async () => {
     setLoading(true);
     setError(null);
+    console.log('[PREVIEW] Fetching business data for:', businessId);
     try {
       const response = await fetch(`/api/businesses/${businessId}`);
+      console.log('[PREVIEW] API response status:', response.status, response.statusText);
       if (!response.ok) {
-        throw new Error('Failed to fetch business data');
+        const errorText = await response.text();
+        console.error('[PREVIEW] API error response:', errorText);
+        throw new Error(`Failed to fetch business data: ${response.status} ${response.statusText}`);
       }
       const data = await response.json();
-      console.log('Fetched business data:', { 
+      console.log('[PREVIEW] Fetched business data:', { 
         businessId, 
         screenshotUrl: data.preview_screenshot_url,
-        hasPreviewData: !!data.preview_data_json 
+        screenshotUrlType: typeof data.preview_screenshot_url,
+        screenshotUrlLength: data.preview_screenshot_url?.length,
+        hasPreviewData: !!data.preview_data_json,
+        allKeys: Object.keys(data)
       });
       setPreviewScreenshotUrl(data.preview_screenshot_url || null);
       setPreviewData(data.preview_data_json || null);
     } catch (err: any) {
+      console.error('[PREVIEW] Error fetching business data:', err);
+      console.error('[PREVIEW] Error details:', err.message, err.stack);
       setError(err.message);
-      console.error('Error fetching business data for preview:', err);
     } finally {
       setLoading(false);
     }
@@ -47,8 +55,10 @@ const WidgetPreview: React.FC<WidgetPreviewProps> = ({ businessId, businessName,
   const handleRegenerateScreenshot = async () => {
     setLoading(true);
     setError(null);
+    console.log('[PREVIEW] Regenerating screenshot for:', businessId);
     try {
       // Fetch current business to get its domain
+      console.log('[PREVIEW] Fetching business domain...');
       const businessResponse = await fetch(`/api/businesses/${businessId}`);
       if (!businessResponse.ok) {
         throw new Error('Failed to fetch business domain for regeneration');
@@ -56,27 +66,38 @@ const WidgetPreview: React.FC<WidgetPreviewProps> = ({ businessId, businessName,
       const business = await businessResponse.json();
       const domain = business.domain;
       const url = `https://${domain}`; // Assuming domain is stored without protocol
+      console.log('[PREVIEW] Business domain:', domain, 'URL:', url);
 
       if (!domain) {
         throw new Error('Business domain not found. Cannot regenerate screenshot.');
       }
 
+      console.log('[PREVIEW] Calling scrape-website API...');
       const response = await fetch('/api/scrape-website', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url, businessId, domain }),
       });
 
+      console.log('[PREVIEW] Scrape API response status:', response.status);
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('[PREVIEW] Scrape API error:', errorData);
         throw new Error(errorData.error || 'Screenshot regeneration failed');
       }
 
       const result = await response.json();
+      console.log('[PREVIEW] Scrape API result:', {
+        hasConfig: !!result.config,
+        screenshotUrl: result.screenshotUrl,
+        screenshotUrlType: typeof result.screenshotUrl
+      });
       setPreviewScreenshotUrl(result.screenshotUrl || null);
       setPreviewData(result.previewData || null); // Update preview data too
       alert('Screenshot regenerated successfully!');
     } catch (err: any) {
+      console.error('[PREVIEW] Regenerate error:', err);
+      console.error('[PREVIEW] Regenerate error details:', err.message, err.stack);
       setError(err.message);
       alert(`Error regenerating screenshot: ${err.message}`);
     } finally {
