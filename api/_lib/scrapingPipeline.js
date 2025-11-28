@@ -7,12 +7,32 @@ export async function runScrapingPipeline(params) {
   try {
     console.log('[PIPELINE] Starting pipeline:', { url, businessId, domain });
     
-    // Dynamic imports for all utils (they're TypeScript but Vercel handles them)
-    const { scrapeWebsite } = await import('../../utils/scraper.ts');
-    const { normalizeToBusinessConfig } = await import('../../utils/normalizer.ts');
-    const { normalizeToPreviewLandingPageData } = await import('../../utils/previewNormalizer.ts');
-    const { extractContactInfo } = await import('../../utils/contactExtractor.ts');
-    const { captureScreenshot } = await import('../../utils/screenshotCapture.ts');
+    // Dynamic imports for all utils - try different paths for local vs Vercel
+    let scrapeWebsite, normalizeToBusinessConfig, normalizeToPreviewLandingPageData, extractContactInfo, captureScreenshot;
+    
+    try {
+      // Try importing from utils folder (works in local dev)
+      const scraperModule = await import('../../utils/scraper');
+      const normalizerModule = await import('../../utils/normalizer');
+      const previewNormalizerModule = await import('../../utils/previewNormalizer');
+      const contactExtractorModule = await import('../../utils/contactExtractor');
+      const screenshotCaptureModule = await import('../../utils/screenshotCapture');
+      
+      scrapeWebsite = scraperModule.scrapeWebsite;
+      normalizeToBusinessConfig = normalizerModule.normalizeToBusinessConfig;
+      normalizeToPreviewLandingPageData = previewNormalizerModule.normalizeToPreviewLandingPageData;
+      extractContactInfo = contactExtractorModule.extractContactInfo;
+      captureScreenshot = screenshotCaptureModule.captureScreenshot;
+      
+      console.log('[PIPELINE] Imported from utils folder (local dev)');
+    } catch (localError) {
+      console.log('[PIPELINE] Local import failed, trying Vercel path...', localError.message);
+      // For Vercel, we need to use the original TypeScript pipeline
+      // Import the original pipeline which has all the dependencies
+      const originalPipeline = await import('../../utils/scrapingPipeline');
+      // Return the result by calling the original function
+      return await originalPipeline.runScrapingPipeline(params);
+    }
     
     console.log('[PIPELINE] All utils imported successfully');
     

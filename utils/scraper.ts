@@ -18,8 +18,9 @@ export async function scrapeWebsite(url: string, apiKey: string): Promise<Scrape
     
     try {
       // Try with enhanced options first (formats and extract)
+      // Note: "images" is not a valid Firecrawl format - we extract images from response data instead
       scrapeResult = await app.scrapeUrl(url, {
-        formats: ['markdown', 'links', 'images', 'rawHtml'],
+        formats: ['markdown', 'links', 'rawHtml'],
       });
     } catch (e) {
       // Fallback to basic scrape
