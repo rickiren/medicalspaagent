@@ -1,39 +1,17 @@
 // JavaScript version of scraping pipeline for Vercel serverless functions
-// This avoids TypeScript import issues in serverless environment
+// All utils are in the same _lib folder so they're available to serverless functions
+
+import { scrapeWebsite } from './scraper.js';
+import { normalizeToBusinessConfig } from './normalizer.js';
+import { normalizeToPreviewLandingPageData } from './previewNormalizer.js';
+import { extractContactInfo } from './contactExtractor.js';
+import { captureScreenshot } from './screenshotCapture.js';
 
 export async function runScrapingPipeline(params) {
   const { url, businessId, domain, firecrawlApiKey, geminiApiKey } = params;
   
   try {
     console.log('[PIPELINE] Starting pipeline:', { url, businessId, domain });
-    
-    // Dynamic imports for all utils - try different paths for local vs Vercel
-    let scrapeWebsite, normalizeToBusinessConfig, normalizeToPreviewLandingPageData, extractContactInfo, captureScreenshot;
-    
-    try {
-      // Try importing from utils folder (works in local dev)
-      const scraperModule = await import('../../utils/scraper');
-      const normalizerModule = await import('../../utils/normalizer');
-      const previewNormalizerModule = await import('../../utils/previewNormalizer');
-      const contactExtractorModule = await import('../../utils/contactExtractor');
-      const screenshotCaptureModule = await import('../../utils/screenshotCapture');
-      
-      scrapeWebsite = scraperModule.scrapeWebsite;
-      normalizeToBusinessConfig = normalizerModule.normalizeToBusinessConfig;
-      normalizeToPreviewLandingPageData = previewNormalizerModule.normalizeToPreviewLandingPageData;
-      extractContactInfo = contactExtractorModule.extractContactInfo;
-      captureScreenshot = screenshotCaptureModule.captureScreenshot;
-      
-      console.log('[PIPELINE] Imported from utils folder (local dev)');
-    } catch (localError) {
-      console.log('[PIPELINE] Local import failed, trying Vercel path...', localError.message);
-      // For Vercel, we need to use the original TypeScript pipeline
-      // Import the original pipeline which has all the dependencies
-      const originalPipeline = await import('../../utils/scrapingPipeline');
-      // Return the result by calling the original function
-      return await originalPipeline.runScrapingPipeline(params);
-    }
-    
     console.log('[PIPELINE] All utils imported successfully');
     
     // Step 1: Scrape website
