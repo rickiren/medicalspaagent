@@ -15,6 +15,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onBack }) => {
   const [view, setView] = useState<View>('list');
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
   const [selectedBusinessName, setSelectedBusinessName] = useState<string>('');
+  const [selectedBusinessDomain, setSelectedBusinessDomain] = useState<string | null>(null);
   const [scrapedConfig, setScrapedConfig] = useState<{ config: BusinessConfig; domain: string } | null>(null);
 
   const handleCreateNew = () => {
@@ -54,9 +55,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onBack }) => {
     setScrapedConfig(null);
   };
 
-  const handlePreview = (id: string, name: string) => {
+  const handlePreview = (id: string, name: string, domain: string | null) => {
     setSelectedBusinessId(id);
     setSelectedBusinessName(name);
+    setSelectedBusinessDomain(domain);
     setView('preview');
   };
 
@@ -116,6 +118,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onBack }) => {
         <WidgetPreview
           businessId={selectedBusinessId}
           businessName={selectedBusinessName}
+          businessDomain={selectedBusinessDomain}
           onBack={handlePreviewBack}
         />
       ) : (

@@ -100,7 +100,7 @@ export default defineConfig(({ mode }) => {
                 try {
                   const { data, error } = await supabase
                     .from('businesses')
-                    .select('*')
+                    .select('id, name, domain, config_json, preview_data_json, contact_info_json, preview_screenshot_url, created_at, updated_at')
                     .eq('id', businessId)
                     .single();
 
@@ -119,7 +119,7 @@ export default defineConfig(({ mode }) => {
                 return;
               }
 
-              // Handle POST /api/businesses (create)
+              // Handle POST /api/businesses (create or update)
               if (method === 'POST' && url === '/api/businesses') {
                 let body = '';
                 req.on('data', (chunk) => {
@@ -128,13 +128,19 @@ export default defineConfig(({ mode }) => {
                 req.on('end', async () => {
                   try {
                     const payload = JSON.parse(body);
+                    
+                    // Use upsert to handle both create and update
                     const { data, error } = await supabase
                       .from('businesses')
-                      .insert({
+                      .upsert({
                         id: payload.id,
                         name: payload.name,
                         domain: payload.domain,
                         config_json: payload.config_json,
+                        preview_data_json: payload.preview_data_json || null,
+                        contact_info_json: payload.contact_info_json || null,
+                      }, {
+                        onConflict: 'id'
                       })
                       .select()
                       .single();
@@ -143,11 +149,11 @@ export default defineConfig(({ mode }) => {
                       throw error;
                     }
 
-                    res.writeHead(201, { 'Content-Type': 'application/json' });
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify(data));
                   } catch (error: any) {
                     res.writeHead(400, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ error: error.message || 'Failed to create business' }));
+                    res.end(JSON.stringify({ error: error.message || 'Failed to save business' }));
                   }
                 });
                 return;
@@ -170,6 +176,8 @@ export default defineConfig(({ mode }) => {
                         name: payload.name,
                         domain: payload.domain,
                         config_json: payload.config_json,
+                        preview_data_json: payload.preview_data_json || null,
+                        contact_info_json: payload.contact_info_json || null,
                       })
                       .eq('id', businessId)
                       .select()
@@ -268,8 +276,35 @@ export default defineConfig(({ mode }) => {
                       return;
                     }
 
+                    // Save config, previewData, contactInfo, and screenshot URL to database using upsert
+                    // This will update if exists, create if new
+                    const { error: upsertError } = await supabase
+                      .from('businesses')
+                      .upsert({
+                        id: businessId,
+                        name: result.config.name,
+                        domain: domain || '',
+                        config_json: result.config,
+                        preview_data_json: result.previewData || null,
+                        contact_info_json: result.contactInfo || null,
+                        preview_screenshot_url: result.screenshotUrl || null,
+                      }, {
+                        onConflict: 'id'
+                      });
+
+                    if (upsertError) {
+                      console.error('Failed to save business:', upsertError);
+                      // Still return the data even if save fails
+                    }
+
+                    // Return config, previewData, contactInfo, and screenshotUrl
                     res.writeHead(200, { 'Content-Type': 'application/json' });
-                    res.end(JSON.stringify({ config: result.config }));
+                    res.end(JSON.stringify({ 
+                      config: result.config,
+                      previewData: result.previewData,
+                      contactInfo: result.contactInfo,
+                      screenshotUrl: result.screenshotUrl
+                    }));
                   } catch (error: any) {
                     res.writeHead(500, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ error: error.message || 'Scraping failed' }));

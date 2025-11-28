@@ -12,7 +12,7 @@ interface BusinessListProps {
   onEdit: (id: string) => void;
   onCreateNew: () => void;
   onScrapeWebsite: () => void;
-  onPreview: (id: string, name: string) => void;
+  onPreview: (id: string, name: string, domain: string | null) => void;
 }
 
 const BusinessList: React.FC<BusinessListProps> = ({ onEdit, onCreateNew, onScrapeWebsite, onPreview }) => {
@@ -146,7 +146,7 @@ const BusinessList: React.FC<BusinessListProps> = ({ onEdit, onCreateNew, onScra
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
                       <button
-                        onClick={() => onPreview(business.id, business.name)}
+                        onClick={() => onPreview(business.id, business.name, business.domain)}
                         className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
                       >
                         Preview

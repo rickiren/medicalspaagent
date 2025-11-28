@@ -68,3 +68,40 @@ export interface BusinessConfig {
   booking: BookingConfig;
   aiPersonality: AIPersonality;
 }
+
+// Preview Landing Page Data Types
+export interface PreviewLandingPageData {
+  logo?: string;
+  colors: {
+    primary?: string;
+    secondary?: string;
+    accent?: string;
+    background?: string;
+    text?: string;
+  };
+  hero: {
+    title?: string;
+    subtitle?: string;
+    image?: string;
+    ctaText?: string;
+  };
+  navigation: Array<{
+    label: string;
+    href: string;
+  }>;
+  sections: Array<{
+    type: 'features' | 'services' | 'testimonials' | 'about';
+    title?: string;
+    content?: string;
+    images?: string[];
+  }>;
+  images: string[];
+  fonts?: {
+    heading?: string;
+    body?: string;
+  };
+  brandStyle?: {
+    tone?: string;
+    aesthetic?: string;
+  };
+}

@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { BusinessConfig, Service, Location, FAQ } from '../types';
+import { BusinessConfig, Service, Location, FAQ, PreviewLandingPageData } from '../types';
+import PreviewDataViewer from './PreviewDataViewer';
+import ContactInfoViewer from './ContactInfoViewer';
+import { ContactInfo } from '../utils/contactExtractor';
 
 interface BusinessEditorProps {
   businessId: string | null;
@@ -36,6 +39,8 @@ const BusinessEditor: React.FC<BusinessEditorProps> = ({
 
   const [domain, setDomain] = useState('');
   const [jsonPreview, setJsonPreview] = useState('');
+  const [previewData, setPreviewData] = useState<PreviewLandingPageData | null>(null);
+  const [contactInfo, setContactInfo] = useState<ContactInfo | null>(null);
 
   useEffect(() => {
     if (mode === 'edit' && businessId) {
@@ -77,6 +82,8 @@ const BusinessEditor: React.FC<BusinessEditorProps> = ({
       const data = await response.json();
       setFormData(data.config_json);
       setDomain(data.domain || '');
+      setPreviewData(data.preview_data_json || null);
+      setContactInfo(data.contact_info_json || null);
       setError(null);
     } catch (err: any) {
       setError(err.message);
@@ -581,9 +588,21 @@ const BusinessEditor: React.FC<BusinessEditorProps> = ({
           </div>
         </section>
 
+        {/* Contact Information */}
+        <section>
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Contact Information</h3>
+          <ContactInfoViewer contactInfo={contactInfo} />
+        </section>
+
+        {/* Preview Landing Page Data */}
+        <section>
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Preview Landing Page Data</h3>
+          <PreviewDataViewer previewData={previewData} businessName={formData.name} />
+        </section>
+
         {/* JSON Preview */}
         <section>
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">JSON Preview</h3>
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">Business Config JSON</h3>
           <pre className="bg-slate-50 border border-slate-200 rounded-lg p-4 text-xs overflow-auto max-h-64">
             {jsonPreview}
           </pre>
