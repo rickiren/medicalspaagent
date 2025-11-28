@@ -21,16 +21,9 @@ const WidgetPreview: React.FC<WidgetPreviewProps> = ({ businessId, businessName,
     setError(null);
     console.log('[PREVIEW] Fetching business data for:', businessId);
     try {
-      // Try dedicated preview endpoint first, fallback to businesses endpoint
-      let response = await fetch(`/api/business/${businessId}/preview`);
-      console.log('[PREVIEW] Preview API response status:', response.status, response.statusText);
-      
-      if (!response.ok) {
-        // Fallback to businesses endpoint
-        console.log('[PREVIEW] Preview endpoint failed, trying businesses endpoint...');
-        response = await fetch(`/api/businesses/${businessId}`);
-        console.log('[PREVIEW] Businesses API response status:', response.status, response.statusText);
-      }
+      // Use businesses endpoint (works in both local and Vercel)
+      const response = await fetch(`/api/businesses/${businessId}`);
+      console.log('[PREVIEW] API response status:', response.status, response.statusText);
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -42,17 +35,22 @@ const WidgetPreview: React.FC<WidgetPreviewProps> = ({ businessId, businessName,
       console.log('[PREVIEW] Fetched business data:', { 
         businessId, 
         dataKeys: Object.keys(data),
-        screenshotUrl: data.screenshotUrl || data.preview_screenshot_url,
-        screenshotUrlType: typeof (data.screenshotUrl || data.preview_screenshot_url),
-        hasPreviewData: !!(data.previewData || data.preview_data_json),
+        screenshotUrl: data.preview_screenshot_url,
+        screenshotUrlType: typeof data.preview_screenshot_url,
+        screenshotUrlValue: data.preview_screenshot_url,
+        hasPreviewData: !!data.preview_data_json,
         fullData: data
       });
       
-      // Handle both response formats (preview endpoint vs businesses endpoint)
-      const screenshotUrl = data.screenshotUrl || data.preview_screenshot_url || null;
-      const previewData = data.previewData || data.preview_data_json || null;
+      // Use the database field names directly
+      const screenshotUrl = data.preview_screenshot_url || null;
+      const previewData = data.preview_data_json || null;
       
-      console.log('[PREVIEW] Setting state:', { screenshotUrl, hasPreviewData: !!previewData });
+      console.log('[PREVIEW] Setting state:', { 
+        screenshotUrl, 
+        hasPreviewData: !!previewData,
+        screenshotUrlLength: screenshotUrl?.length 
+      });
       setPreviewScreenshotUrl(screenshotUrl);
       setPreviewData(previewData);
     } catch (err: any) {
