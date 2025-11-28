@@ -32,20 +32,11 @@ export default async function handler(req, res) {
     }
 
     // Import and run scraping pipeline
+    // Use the JavaScript version in api/_lib for Vercel compatibility
     console.log('[SCRAPE-WEBSITE] Importing scraping pipeline...');
     let runScrapingPipeline;
     try {
-      // Try with .ts extension first (for Vercel), then without (for local)
-      let pipelineModule;
-      try {
-        pipelineModule = await import('../utils/scrapingPipeline.ts');
-      } catch (e1) {
-        try {
-          pipelineModule = await import('../utils/scrapingPipeline.js');
-        } catch (e2) {
-          pipelineModule = await import('../utils/scrapingPipeline');
-        }
-      }
+      const pipelineModule = await import('./_lib/scrapingPipeline.js');
       runScrapingPipeline = pipelineModule.runScrapingPipeline;
       console.log('[SCRAPE-WEBSITE] Successfully imported scraping pipeline');
     } catch (importError) {
