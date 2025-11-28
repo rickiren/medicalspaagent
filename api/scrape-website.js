@@ -35,14 +35,30 @@ export default async function handler(req, res) {
     console.log('[SCRAPE-WEBSITE] Importing scraping pipeline...');
     let runScrapingPipeline;
     try {
-      const pipelineModule = await import('../utils/scrapingPipeline');
+      // Try with .ts extension first (for Vercel), then without (for local)
+      let pipelineModule;
+      try {
+        pipelineModule = await import('../utils/scrapingPipeline.ts');
+      } catch (e1) {
+        try {
+          pipelineModule = await import('../utils/scrapingPipeline.js');
+        } catch (e2) {
+          pipelineModule = await import('../utils/scrapingPipeline');
+        }
+      }
       runScrapingPipeline = pipelineModule.runScrapingPipeline;
       console.log('[SCRAPE-WEBSITE] Successfully imported scraping pipeline');
     } catch (importError) {
       console.error('[SCRAPE-WEBSITE] Failed to import scraping pipeline:', importError);
+      console.error('[SCRAPE-WEBSITE] Import error details:', {
+        message: importError.message,
+        stack: importError.stack,
+        code: importError.code
+      });
       return res.status(500).json({ 
         error: 'Failed to import scraping pipeline',
-        details: importError.message 
+        details: importError.message,
+        code: importError.code
       });
     }
 
