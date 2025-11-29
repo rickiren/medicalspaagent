@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import VoiceWidget from './components/VoiceWidget';
+import { HeroWidget } from './components/HeroWidget';
 import Dashboard from './components/Dashboard';
 import BusinessPreviewPage from './components/BusinessPreviewPage';
+import TermsOfService from './components/TermsOfService';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import HIPAACompliance from './components/HIPAACompliance';
+import Security from './components/Security';
 
 function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
   const [showDashboard, setShowDashboard] = useState(false);
+  const [widgetOpen, setWidgetOpen] = useState(false);
 
   // Don't show dashboard if we're on a business preview page
   const isPreviewPage = location.pathname.startsWith('/business/');
@@ -35,13 +41,7 @@ function AppContent() {
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-violet-600 flex items-center justify-center shadow-lg shadow-rose-500/20">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
               </div>
-              <span className="font-display font-bold text-2xl tracking-tight text-white">Aura<span className="text-rose-400">AI</span></span>
-          </div>
-          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
-              <a href="#roi" className="hover:text-white transition-colors">ROI</a>
-              <a href="#core-features" className="hover:text-white transition-colors">Core Features</a>
-              <a href="#advanced-features" className="hover:text-white transition-colors">Advanced Intelligence</a>
-              <a href="#testimonials" className="hover:text-white transition-colors">Testimonials</a>
+              <span className="font-display font-bold text-2xl tracking-tight text-white">Cynthia<span className="text-rose-400">.ai</span></span>
           </div>
           <div className="flex items-center gap-3">
               <button
@@ -60,30 +60,43 @@ function AppContent() {
       <main className="relative z-10 px-6 pt-12 md:pt-24 max-w-7xl mx-auto flex flex-col items-center">
         
         {/* --- Hero Section --- */}
-        <section className="text-center mb-32 max-w-5xl mx-auto animate-fade-in-up">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold tracking-wide uppercase mb-8 animate-fade-in-up">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-                </span>
-                Gemini Live Powered
-            </div>
+        <section className="mb-32 w-full animate-fade-in-up">
+            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8 lg:gap-12 w-full">
+                {/* Left Side - Text Content */}
+                <div className="flex-1 text-center lg:text-left">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs font-semibold tracking-wide uppercase mb-8 animate-fade-in-up">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                        </span>
+                        Gemini Live Powered
+                    </div>
 
-            <h1 className="font-display text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-8 leading-[1.1]">
-                Your New 24/7 AI <br/>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-300 via-fuchsia-300 to-violet-300 text-glow">Medical Spa Receptionist</span>
-            </h1>
-            
-            <p className="text-lg md:text-xl text-slate-400 mb-12 max-w-3xl mx-auto leading-relaxed">
-                Increase bookings, answer questions instantly, and impress every visitor — powered by your spa's real services, pricing, and treatments. <br/>
-                <span className="text-white font-medium">Fully custom to your business. Installed in 30 seconds.</span>
-            </p>
+                    <h1 className="font-display text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-8 leading-[1.1]">
+                        Your New 24/7 AI <br/>
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-300 via-fuchsia-300 to-violet-300 text-glow">Medical Spa Receptionist</span>
+                    </h1>
+                    
+                    <p className="text-lg md:text-xl text-slate-400 mb-12 max-w-3xl mx-auto lg:mx-0 leading-relaxed">
+                        Increase bookings, answer questions instantly, and impress every visitor — powered by your spa's real services, pricing, and treatments. <br/>
+                        <span className="text-white font-medium">Fully custom to your business. Installed in 30 seconds.</span>
+                    </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <button className="px-8 py-4 rounded-xl bg-gradient-to-r from-rose-500 to-violet-600 text-white font-semibold text-lg hover:shadow-[0_0_40px_rgba(244,63,94,0.5)] transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
-                    <span>Get Your Free AI Receptionist Demo</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                </button>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                        <button 
+                            onClick={() => setWidgetOpen(true)}
+                            className="px-8 py-4 rounded-xl bg-gradient-to-r from-rose-500 to-violet-600 text-white font-semibold text-lg hover:shadow-[0_0_40px_rgba(244,63,94,0.5)] transition-all duration-300 hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+                        >
+                            <span>Get Your Free AI Receptionist Demo</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Right Side - Hero Widget */}
+                <div className="flex-1 flex justify-center lg:justify-end w-full lg:w-auto">
+                    <HeroWidget />
+                </div>
             </div>
         </section>
 
@@ -92,7 +105,7 @@ function AppContent() {
             <div className="text-center mb-16">
                 <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-6">Turn Your Website Into a Revenue Engine</h2>
                 <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-                    Stop losing money to "Contact Us" forms. Aura captures the <span className="text-white font-bold">60% of traffic</span> that lands after hours.
+                    Stop losing money to "Contact Us" forms. Cynthia.ai captures the <span className="text-white font-bold">60% of traffic</span> that lands after hours.
                 </p>
             </div>
 
@@ -129,7 +142,7 @@ function AppContent() {
                     <div className="text-4xl font-bold text-white mb-2 group-hover:text-rose-300 transition-colors">30%</div>
                     <p className="text-slate-400 text-sm uppercase tracking-wider font-semibold">Increase in Upsells</p>
                     <p className="text-slate-500 text-sm mt-4 leading-relaxed">
-                        Aura suggests add-ons ("Botox with Lip Flip") and memberships during booking.
+                        Cynthia.ai suggests add-ons ("Botox with Lip Flip") and memberships during booking.
                     </p>
                 </div>
             </div>
@@ -159,7 +172,7 @@ function AppContent() {
                  <div className="p-8 rounded-3xl glass-card border-rose-500/30 relative overflow-hidden">
                      <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/20 rounded-full blur-[50px] pointer-events-none"></div>
                      <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                         <span className="animate-pulse">🚀</span> The Aura Way
+                         <span className="animate-pulse">🚀</span> The Cynthia.ai Way
                      </h3>
                      <ul className="space-y-4">
                          <li className="flex items-center gap-3 text-white">
@@ -192,7 +205,7 @@ function AppContent() {
                         <span className="text-rose-400">Actually Listens.</span>
                     </h2>
                     <p className="text-lg text-slate-400 leading-relaxed">
-                        Forget clunky chatbots. Aura speaks with a friendly, luxurious clinic voice. It handles pricing, insurance, aftercare, and specific treatment questions with human-level nuance.
+                        Forget clunky chatbots. Cynthia.ai speaks with a friendly, luxurious clinic voice. It handles pricing, insurance, aftercare, and specific treatment questions with human-level nuance.
                     </p>
                     <ul className="space-y-3 pt-4">
                         <li className="flex items-center gap-3 text-slate-300">
@@ -231,7 +244,7 @@ function AppContent() {
                         <span className="text-emerald-400">It Books.</span>
                     </h2>
                     <p className="text-lg text-slate-400 leading-relaxed">
-                        Aura integrates directly with your existing software (Calendly, Acuity, Aesthetic Record). It checks availability in real-time, handles reschedules, and captures deposits instantly.
+                        Cynthia.ai integrates directly with your existing software (Calendly, Acuity, Aesthetic Record). It checks availability in real-time, handles reschedules, and captures deposits instantly.
                     </p>
                     <div className="grid grid-cols-2 gap-4 pt-4">
                         <div className="p-4 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
@@ -285,7 +298,7 @@ function AppContent() {
                         <span className="text-blue-400">Actually See.</span>
                     </h2>
                     <p className="text-lg text-slate-400 leading-relaxed">
-                        Visitors can enable their camera for an instant skin assessment. Aura analyzes tone, texture, and concerns to recommend the *exact* treatments you offer. It's the ultimate conversion tool.
+                        Visitors can enable their camera for an instant skin assessment. Cynthia.ai analyzes tone, texture, and concerns to recommend the *exact* treatments you offer. It's the ultimate conversion tool.
                     </p>
                      <ul className="space-y-3 pt-4">
                         <li className="flex items-center gap-3 text-slate-300">
@@ -422,7 +435,7 @@ function AppContent() {
         <section id="testimonials" className="w-full mb-32 max-w-6xl mx-auto">
              <div className="text-center mb-16">
                 <h2 className="font-display text-3xl md:text-5xl font-bold text-white mb-4">Trusted by Leading Aesthetic Practices</h2>
-                <p className="text-slate-400">See why clinics are switching to Aura.</p>
+                <p className="text-slate-400">See why clinics are switching to Cynthia.ai.</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -490,7 +503,7 @@ function AppContent() {
             <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-rose-600/10 to-transparent pointer-events-none"></div>
             <h2 className="font-display text-4xl font-bold text-white mb-6 relative z-10">Ready to modernize your practice?</h2>
             <p className="text-slate-400 mb-8 max-w-xl mx-auto relative z-10">
-                Join the waiting list for Aura Enterprise. Includes custom voice cloning, dedicated onboarding, and 24/7 priority support.
+                Join the waiting list for Cynthia.ai Enterprise. Includes custom voice cloning, dedicated onboarding, and 24/7 priority support.
             </p>
             <div className="flex flex-col items-center gap-4 relative z-10">
                 <button className="px-10 py-4 rounded-full bg-white text-black font-bold text-lg hover:bg-slate-200 transition-all shadow-[0_0_30px_rgba(255,255,255,0.3)]">
@@ -501,15 +514,84 @@ function AppContent() {
         </div>
 
         {/* Footer */}
-        <footer className="w-full border-t border-white/5 py-12 text-center text-slate-500 text-sm">
-            <p>&copy; 2024 Aura AI Systems. All rights reserved.</p>
+        <footer className="w-full border-t border-white/5 mt-24">
+            <div className="max-w-7xl mx-auto px-6 py-16">
+                {/* Main Footer Content */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+                    {/* Brand Column */}
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-violet-600 flex items-center justify-center shadow-lg shadow-rose-500/20">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                            </div>
+                            <span className="font-display font-bold text-2xl tracking-tight text-white">Cynthia<span className="text-rose-400">.ai</span></span>
+                        </div>
+                        <p className="text-slate-400 text-sm leading-relaxed">
+                            The first AI medical spa receptionist that listens, analyzes, and helps you execute with precision.
+                        </p>
+                    </div>
+
+                    {/* Product Column */}
+                    <div>
+                        <h3 className="font-bold text-white text-sm mb-4 uppercase tracking-wider">Product</h3>
+                        <ul className="space-y-3">
+                            <li><a href="#core-features" className="text-slate-400 text-sm hover:text-white transition-colors">Features</a></li>
+                            <li><a href="#pricing" className="text-slate-400 text-sm hover:text-white transition-colors">Pricing</a></li>
+                            <li><a href="#roi" className="text-slate-400 text-sm hover:text-white transition-colors">ROI Calculator</a></li>
+                            <li><a href="#" className="text-slate-400 text-sm hover:text-white transition-colors">Demo</a></li>
+                        </ul>
+                    </div>
+
+                    {/* Company Column */}
+                    <div>
+                        <h3 className="font-bold text-white text-sm mb-4 uppercase tracking-wider">Company</h3>
+                        <ul className="space-y-3">
+                            <li><a href="#" className="text-slate-400 text-sm hover:text-white transition-colors">About Us</a></li>
+                            <li><a href="#testimonials" className="text-slate-400 text-sm hover:text-white transition-colors">Testimonials</a></li>
+                            <li><a href="#" className="text-slate-400 text-sm hover:text-white transition-colors">Blog</a></li>
+                            <li><a href="#" className="text-slate-400 text-sm hover:text-white transition-colors">Contact</a></li>
+                        </ul>
+                    </div>
+
+                    {/* Legal Column */}
+                    <div>
+                        <h3 className="font-bold text-white text-sm mb-4 uppercase tracking-wider">Legal</h3>
+                        <ul className="space-y-3">
+                            <li><a href="/terms-of-service" className="text-slate-400 text-sm hover:text-white transition-colors">Terms of Service</a></li>
+                            <li><a href="/privacy-policy" className="text-slate-400 text-sm hover:text-white transition-colors">Privacy Policy</a></li>
+                            <li><a href="/hipaa-compliance" className="text-slate-400 text-sm hover:text-white transition-colors">HIPAA Compliance</a></li>
+                            <li><a href="/security" className="text-slate-400 text-sm hover:text-white transition-colors">Security</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                {/* Bottom Section */}
+                <div className="border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div className="flex flex-col gap-2">
+                        <p className="text-slate-400 text-sm">&copy; 2024 Cynthia.ai Systems. All rights reserved.</p>
+                        <p className="text-slate-500 text-xs">Cynthia.ai is an AI assistant tool, not a medical advisor. Always consult with licensed healthcare professionals.</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        {/* Social Media Icons */}
+                        <a href="#" className="w-10 h-10 rounded-lg border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:border-white/20 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"/></svg>
+                        </a>
+                        <a href="#" className="w-10 h-10 rounded-lg border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:border-white/20 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+                        </a>
+                        <a href="#" className="w-10 h-10 rounded-lg border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:border-white/20 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
         </footer>
 
       </main>
 
       {/* --- The Widget (Demo Product) --- */}
       {/* Widget automatically fetches config from Supabase via /api/business/{businessId}/config */}
-      {!isPreviewPage && <VoiceWidget businessId="test-medspa" />}
+      {!isPreviewPage && <VoiceWidget businessId="test-medspa" open={widgetOpen} onOpenChange={setWidgetOpen} />}
       
     </div>
   );
@@ -520,6 +602,10 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/business/:businessName" element={<BusinessPreviewPage />} />
+        <Route path="/terms-of-service" element={<TermsOfService />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/hipaa-compliance" element={<HIPAACompliance />} />
+        <Route path="/security" element={<Security />} />
         <Route path="*" element={<AppContent />} />
       </Routes>
     </BrowserRouter>
