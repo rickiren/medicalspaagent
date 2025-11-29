@@ -5,8 +5,10 @@ import BusinessEditor from './BusinessEditor';
 import WebsiteScraper from './WebsiteScraper';
 import WidgetPreview from './WidgetPreview';
 import EmailGenerator from './EmailGenerator';
+import LeadsList from './LeadsList';
 
-type View = 'list' | 'edit' | 'create' | 'scrape' | 'preview' | 'email';
+type View = 'list' | 'edit' | 'create' | 'scrape' | 'preview' | 'email' | 'leads';
+type Tab = 'businesses' | 'leads';
 
 interface DashboardProps {
   onBack?: () => void;
@@ -14,6 +16,7 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ onBack }) => {
   const [view, setView] = useState<View>('list');
+  const [activeTab, setActiveTab] = useState<Tab>('businesses');
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
   const [selectedBusinessName, setSelectedBusinessName] = useState<string>('');
   const [selectedBusinessDomain, setSelectedBusinessDomain] = useState<string | null>(null);
@@ -83,7 +86,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onBack }) => {
       {view !== 'preview' && (
         <div className="relative z-50 w-full border-b border-white/10 bg-slate-900/40 backdrop-blur-xl">
           <div className="max-w-7xl mx-auto px-6 py-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4">
                 {onBack && (
                   <button
@@ -104,7 +107,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onBack }) => {
                   <h1 className="font-display text-2xl font-bold text-white">Admin Dashboard</h1>
                 </div>
               </div>
-              {view === 'list' && (
+              {view === 'list' && activeTab === 'businesses' && (
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setView('email')}
@@ -135,6 +138,35 @@ const Dashboard: React.FC<DashboardProps> = ({ onBack }) => {
                 </button>
               )}
             </div>
+            {/* Tab Navigation */}
+            <div className="flex items-center gap-2 border-b border-white/10">
+              <button
+                onClick={() => {
+                  setActiveTab('businesses');
+                  setView('list');
+                }}
+                className={`px-4 py-2 text-sm font-semibold transition-all ${
+                  activeTab === 'businesses'
+                    ? 'text-white border-b-2 border-rose-500'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Businesses
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('leads');
+                  setView('leads');
+                }}
+                className={`px-4 py-2 text-sm font-semibold transition-all ${
+                  activeTab === 'leads'
+                    ? 'text-white border-b-2 border-rose-500'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Leads
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -148,13 +180,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onBack }) => {
         />
       ) : (
         <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
-          {view === 'list' && (
+          {view === 'list' && activeTab === 'businesses' && (
             <BusinessList 
               onEdit={handleEdit} 
               onCreateNew={handleCreateNew}
               onScrapeWebsite={handleScrapeWebsite}
               onPreview={handlePreview}
             />
+          )}
+          {view === 'leads' && activeTab === 'leads' && (
+            <LeadsList onScrapeQueue={() => {}} />
           )}
           {view === 'scrape' && (
             <WebsiteScraper
