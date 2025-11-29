@@ -159,11 +159,6 @@ const BusinessList: React.FC<BusinessListProps> = ({ onEdit, onCreateNew, onScra
                         target="_blank"
                         rel="noopener noreferrer"
                         className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors inline-block cursor-pointer"
-                        onClick={(e) => {
-                          // Ensure it opens in new tab
-                          e.preventDefault();
-                          window.open(`/business/${slugify(business.name)}`, '_blank');
-                        }}
                       >
                         Preview
                       </a>
