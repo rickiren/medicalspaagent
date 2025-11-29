@@ -159,9 +159,31 @@ const BusinessList: React.FC<BusinessListProps> = ({ onEdit, onCreateNew, onScra
                         target="_blank"
                         rel="noopener noreferrer"
                         className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors inline-block cursor-pointer"
+                        title={`Open preview: /business/${slugify(business.name)}`}
                       >
                         Preview
                       </a>
+                      <button
+                        onClick={() => {
+                          const url = `${window.location.origin}/business/${slugify(business.name)}`;
+                          navigator.clipboard.writeText(url).then(() => {
+                            alert(`Link copied to clipboard!\n\n${url}`);
+                          }).catch(() => {
+                            // Fallback for older browsers
+                            const textArea = document.createElement('textarea');
+                            textArea.value = url;
+                            document.body.appendChild(textArea);
+                            textArea.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(textArea);
+                            alert(`Link copied to clipboard!\n\n${url}`);
+                          });
+                        }}
+                        className="px-3 py-1.5 bg-green-50 text-green-600 rounded hover:bg-green-100 transition-colors"
+                        title="Copy shareable link"
+                      >
+                        Copy Link
+                      </button>
                       <button
                         onClick={() => onEdit(business.id)}
                         className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded hover:bg-slate-200 transition-colors"
