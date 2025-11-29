@@ -25,6 +25,8 @@ const BusinessPreviewPage: React.FC = () => {
         return;
       }
 
+      console.log('[BusinessPreviewPage] Looking for business with slug:', businessName);
+
       try {
         setLoading(true);
         setError(null);
@@ -36,13 +38,22 @@ const BusinessPreviewPage: React.FC = () => {
         }
         
         const businesses = await response.json();
+        console.log('[BusinessPreviewPage] Loaded businesses:', businesses.length);
         
         // Find business by matching slugified name or ID
-        const business = businesses.find((b: any) => 
-          slugify(b.name) === businessName || b.id === businessName
-        );
+        const business = businesses.find((b: any) => {
+          const slugifiedName = slugify(b.name);
+          const matches = slugifiedName === businessName || b.id === businessName;
+          if (matches) {
+            console.log('[BusinessPreviewPage] Found match:', { name: b.name, id: b.id, slugifiedName });
+          }
+          return matches;
+        });
         
         if (!business) {
+          console.error('[BusinessPreviewPage] Business not found. Available slugs:', 
+            businesses.map((b: any) => ({ name: b.name, slug: slugify(b.name) }))
+          );
           setError(`Business "${businessName}" not found`);
           setLoading(false);
           return;
