@@ -1,110 +1,128 @@
-# Deployment Steps - GitHub to Vercel
+# Deployment Steps - GitHub to Firebase
 
 ## ✅ Step 1: Code Pushed to GitHub
 Your code has been successfully pushed to: `https://github.com/rickiren/medicalspaagent.git`
 
-## 🚀 Step 2: Connect GitHub to Vercel
+## 🚀 Step 2: Deploy to Firebase
 
-### Option A: If you already have a Vercel project
-1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
-2. Find your project: `medicalspaagent` (or similar)
-3. Go to **Settings** → **Git**
-4. Verify it's connected to: `rickiren/medicalspaagent`
-5. If not connected, click **Connect Git Repository** and select your repo
+### Using Firebase CLI
 
-### Option B: Create a new Vercel project
-1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
-2. Click **Add New** → **Project**
-3. Import from GitHub: `rickiren/medicalspaagent`
-4. Vercel will auto-detect it's a Vite project
-5. Click **Deploy** (we'll add environment variables next)
+1. **Login to Firebase:**
+   ```bash
+   firebase login
+   ```
 
-## 🔐 Step 3: Set Environment Variables in Vercel
+2. **Build the application:**
+   ```bash
+   npm run build
+   ```
 
-Go to your Vercel project → **Settings** → **Environment Variables**
+3. **Deploy to Firebase:**
+   ```bash
+   firebase deploy
+   ```
 
-Add these variables (for **Production**, **Preview**, and **Development**):
+   Or deploy separately:
+   ```bash
+   # Deploy hosting only
+   firebase deploy --only hosting
+   
+   # Deploy functions only
+   firebase deploy --only functions
+   ```
 
-### Server-side (API routes) - NO prefix:
+## 🔐 Step 3: Set Environment Variables in Firebase
+
+### For Firebase Functions (API routes)
+
+Set secrets via Firebase CLI:
+```bash
+firebase functions:secrets:set SUPABASE_URL
+firebase functions:secrets:set SUPABASE_ANON_KEY
+firebase functions:secrets:set SUPABASE_SERVICE_ROLE_KEY
+firebase functions:secrets:set GEMINI_API_KEY
+firebase functions:secrets:set FIRECRAWL_API_KEY
 ```
-SUPABASE_URL=https://qrnbuerdzppfbgzgoncp.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFybmJ1ZXJkenBwZmJnemdvbmNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxNjQ3MDAsImV4cCI6MjA3OTc0MDcwMH0.ya6K3otkisSevvX2LpnTwCjHb1796IyiJ0Vkx3Xik7Q
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
-GEMINI_API_KEY=AIzaSyA7cEFNSDW3QF5BKksAh4Tz7ht_tRYYxlA
-FIRECRAWL_API_KEY=fc-cb9089570df74df595b307036cb2e868
-SCREENSHOTONE_SECRET_KEY=wzQ5CwGPd5r
-```
 
-### Client-side (React app) - NEEDS VITE_ prefix:
+Or via Firebase Console:
+1. Go to Firebase Console → Your Project → Functions
+2. Click "Secrets" tab
+3. Add each secret with its value
+
+### For Client-side (React app)
+
+Add these to your `.env` file for local development, or set them in your build process:
+
 ```
 VITE_SUPABASE_URL=https://qrnbuerdzppfbgzgoncp.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFybmJ1ZXJkenBwZmJnemdvbmNwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxNjQ3MDAsImV4cCI6MjA3OTc0MDcwMH0.ya6K3otkisSevvX2LpnTwCjHb1796IyiJ0Vkx3Xik7Q
-VITE_SCREENSHOTONE_PUBLIC_KEY=7JL3Qryis594lg
+VITE_SUPABASE_ANON_KEY=your_anon_key_here
+VITE_SCREENSHOTONE_PUBLIC_KEY=your_key_here
 ```
 
-**Important Notes:**
-- Select **Production**, **Preview**, and **Development** for each variable
-- After adding variables, you MUST redeploy (see Step 4)
-- Get `SUPABASE_SERVICE_ROLE_KEY` from Supabase Dashboard → Settings → API
+**Note:** For production, these should be set during the build process or via Firebase Hosting environment variables.
 
-## 🔄 Step 4: Trigger Deployment
+## 🔄 Step 4: Redeploy After Environment Changes
 
 After adding environment variables:
 
-1. Go to **Deployments** tab
-2. Click **...** (three dots) on the latest deployment
-3. Click **Redeploy**
-4. OR push a new commit to trigger automatic deployment
+1. Redeploy functions:
+   ```bash
+   firebase deploy --only functions
+   ```
+
+2. Or redeploy everything:
+   ```bash
+   firebase deploy
+   ```
 
 ## ✅ Step 5: Verify Deployment Settings
 
-Go to **Settings** → **General** and verify:
-
-- **Framework Preset:** Vite
-- **Build Command:** `npm run build`
-- **Output Directory:** `dist`
-- **Install Command:** `npm install`
+Your Firebase project is configured in `firebase.json`:
+- **Hosting:** Serves from `dist` directory
+- **Functions:** Located in `functions` directory
+- **Project ID:** `gen-lang-client-0046334557`
 
 ## 🧪 Step 6: Test Your Deployment
 
 After deployment completes, test these URLs:
 
 1. **Main Landing Page:**
-   - `https://your-project.vercel.app/`
+   - `https://gen-lang-client-0046334557.web.app/`
+   - `https://gen-lang-client-0046334557.firebaseapp.com/`
 
 2. **Business Preview Pages:**
-   - `https://your-project.vercel.app/business/blue-pearl-dentistry`
-   - `https://your-project.vercel.app/business/self-care-la`
-   - (Use slugified business names)
+   - `https://gen-lang-client-0046334557.web.app/preview/{business-id}`
+   - `https://gen-lang-client-0046334557.web.app/widget/{business-id}`
 
 3. **API Endpoints:**
-   - `https://your-project.vercel.app/api/businesses` (should return JSON)
+   - `https://us-central1-gen-lang-client-0046334557.cloudfunctions.net/api/businesses`
 
 ## 🔍 Troubleshooting
 
 ### If routes return 404:
-- Verify `vercel.json` exists in root (✅ it does)
-- Check that rewrite rules are correct (✅ they are)
-- Redeploy after any changes
+- Verify `firebase.json` has correct rewrite rules
+- Check that `dist` directory was built correctly
+- Ensure single-page app configuration is enabled
 
 ### If environment variables don't work:
-- Make sure you added them for **all environments** (Production, Preview, Development)
-- Redeploy after adding variables
-- Check Vercel Function Logs for errors
+- Make sure you set secrets for Firebase Functions
+- Redeploy functions after adding secrets
+- Check Firebase Functions logs: `firebase functions:log`
 
 ### If build fails:
-- Check **Deployments** → **Build Logs**
+- Check build logs in terminal
 - Common issues:
-  - Missing dependencies → Check `package.json` is committed
-  - TypeScript errors → Check build logs
+  - Missing dependencies → Run `npm install`
+  - TypeScript errors → Check build output
   - Import errors → Verify file paths
 
 ## 📝 Quick Checklist
 
 - [ ] Code pushed to GitHub ✅
-- [ ] Vercel project connected to GitHub repo
-- [ ] Environment variables added (with VITE_ prefix for client-side)
-- [ ] Deployment triggered/redeployed
+- [ ] Firebase project initialized
+- [ ] Environment variables/secrets added
+- [ ] Application built (`npm run build`)
+- [ ] Deployment triggered (`firebase deploy`)
 - [ ] Build completes successfully
 - [ ] Routes work (test preview pages)
 - [ ] API endpoints work (test /api/businesses)
@@ -112,5 +130,4 @@ After deployment completes, test these URLs:
 ## 🎉 You're Done!
 
 Once deployed, your preview links will work at:
-`https://your-project.vercel.app/business/{business-name}`
-
+`https://gen-lang-client-0046334557.web.app/preview/{business-id}`
