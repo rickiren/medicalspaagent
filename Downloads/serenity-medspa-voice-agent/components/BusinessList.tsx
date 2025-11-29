@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { slugify } from '../utils/slugify';
 
 interface Business {
@@ -155,14 +154,14 @@ const BusinessList: React.FC<BusinessListProps> = ({ onEdit, onCreateNew, onScra
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
-                      <Link
-                        to={`/business/${slugify(business.name)}`}
+                      <a
+                        href={`/business/${slugify(business.name)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors"
+                        className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-100 transition-colors inline-block"
                       >
                         Preview
-                      </Link>
+                      </a>
                       <button
                         onClick={() => onEdit(business.id)}
                         className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded hover:bg-slate-200 transition-colors"
