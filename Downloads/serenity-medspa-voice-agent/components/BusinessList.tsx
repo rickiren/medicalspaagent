@@ -181,6 +181,7 @@ const BusinessList: React.FC<BusinessListProps> = ({ onEdit, onCreateNew, onScra
                         }}
                         className="px-3 py-1.5 bg-green-50 text-green-600 rounded hover:bg-green-100 transition-colors"
                         title="Copy shareable link"
+                        style={{ display: 'block' }}
                       >
                         Copy Link
                       </button>
