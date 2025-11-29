@@ -8,6 +8,7 @@ import TermsOfService from './components/TermsOfService';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import HIPAACompliance from './components/HIPAACompliance';
 import Security from './components/Security';
+import { SEOHead } from './components/SEOHead';
 
 function AppContent() {
   const location = useLocation();
@@ -24,6 +25,7 @@ function AppContent() {
 
   return (
     <div className="relative min-h-screen w-full overflow-x-hidden bg-[#0f1016] text-white selection:bg-rose-500/30 font-sans">
+      <SEOHead />
       
       {/* --- Ambient Background Glows --- */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">

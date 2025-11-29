@@ -4,6 +4,7 @@ import VoiceWidget from './VoiceWidget';
 import PreviewLandingPage from './PreviewLandingPage';
 import { PreviewLandingPageData } from '../types';
 import { slugify } from '../utils/slugify';
+import { SEOHead } from './SEOHead';
 
 const BusinessPreviewPage: React.FC = () => {
   const { businessName } = useParams<{ businessName: string }>();
@@ -175,6 +176,11 @@ const BusinessPreviewPage: React.FC = () => {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden flex flex-col">
+      <SEOHead 
+        title={`${actualBusinessName} - AI Receptionist by Cynthia.ai`}
+        description={`Experience ${actualBusinessName}'s AI-powered receptionist. Book appointments, get instant answers, and explore services 24/7.`}
+        businessName={actualBusinessName}
+      />
       {/* Preview Mode Banner */}
       <div className="flex-shrink-0 bg-blue-600 text-white px-6 py-3 text-sm z-50 flex items-center justify-between shadow-lg">
         <div className="flex items-center space-x-4">
