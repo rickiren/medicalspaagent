@@ -360,3 +360,5 @@ exports.api = functions.runWith({
   memory: '1GB'
 }).https.onRequest(app);
 
+// OpenAI Realtime WebSocket proxy (2nd gen function)
+exports.openaiRealtimeProxy = require('./openaiRealtimeProxy').openaiRealtimeProxy;

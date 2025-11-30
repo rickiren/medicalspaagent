@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { GoogleGenAI, LiveServerMessage, Modality, FunctionDeclaration, Type } from "@google/genai";
 import { Message, ConnectionState, BookingDetails, BusinessConfig } from '../types';
 import { normalizeBusinessConfig } from '../utils/businessConfig';
 import { decodeBase64, decodeAudioData, createPCMBlob } from '../utils/audioUtils';
@@ -10,6 +9,23 @@ import Visualizer from './Visualizer';
 // --- Assets ---
 // Placeholder image for the agent - using a more neutral/professional portrait
 const AGENT_AVATAR = "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=200&auto=format&fit=crop";
+
+type JsonSchema = {
+  type: 'object';
+  properties: Record<string, { type: 'string'; description?: string }>;
+  required?: string[];
+};
+
+type FunctionDeclaration = {
+  name: string;
+  description: string;
+  parameters: JsonSchema;
+};
+
+type OpenAIRealtimeEvent = {
+  type: string;
+  [key: string]: any;
+};
 
 // Helper to create booking function from config
 const createBookingFunction = (config: BusinessConfig): FunctionDeclaration => {
@@ -31,12 +47,12 @@ const createBookingFunction = (config: BusinessConfig): FunctionDeclaration => {
     name: 'bookAppointment',
     description: bookingDescription,
     parameters: {
-      type: Type.OBJECT,
+      type: 'object',
       properties: {
-        service: { type: Type.STRING, description: 'The service to book.' },
-        date: { type: Type.STRING, description: 'The date of the appointment (YYYY-MM-DD).' },
-        time: { type: Type.STRING, description: 'The time of the appointment (HH:MM).' },
-        customerName: { type: Type.STRING, description: 'Name of the customer.' }
+        service: { type: 'string', description: 'The service to book.' },
+        date: { type: 'string', description: 'The date of the appointment (YYYY-MM-DD).' },
+        time: { type: 'string', description: 'The time of the appointment (HH:MM).' },
+        customerName: { type: 'string', description: 'Name of the customer.' }
       },
       required: ['service', 'date', 'time']
     }
@@ -47,9 +63,9 @@ const requestCameraFunction: FunctionDeclaration = {
   name: 'requestCamera',
   description: 'Request the user to turn on their camera for a visual skin or body analysis.',
   parameters: {
-    type: Type.OBJECT,
+    type: 'object',
     properties: {
-      reason: { type: Type.STRING, description: 'The reason for requesting the camera.' }
+      reason: { type: 'string', description: 'The reason for requesting the camera.' }
     }
   }
 };
@@ -84,7 +100,9 @@ const VoiceWidget: React.FC<VoiceWidgetProps> = ({ businessId, open: controlledO
   
   // --- Refs ---
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const sessionPromiseRef = useRef<Promise<any> | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const pendingAssistantIdRef = useRef<string | null>(null);
+  const toolCallBuffersRef = useRef<Record<string, string>>({});
   const audioContextRef = useRef<AudioContext | null>(null);
   const outputContextRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -197,13 +215,13 @@ const VoiceWidget: React.FC<VoiceWidgetProps> = ({ businessId, open: controlledO
       subduedTimeoutRef.current = null;
     }
 
-    // Close Gemini Session
-    if (sessionPromiseRef.current) {
-       sessionPromiseRef.current.then(session => {
-           try { session.close(); } catch(e) { console.warn("Session close error", e) }
-       });
-       sessionPromiseRef.current = null;
+    // Close OpenAI session
+    if (wsRef.current) {
+      try { wsRef.current.close(); } catch(e) { console.warn("Session close error", e); }
+      wsRef.current = null;
     }
+    pendingAssistantIdRef.current = null;
+    toolCallBuffersRef.current = {};
 
     setConnectionState(ConnectionState.DISCONNECTED);
   }, [stopAudioPlayback]);
@@ -249,7 +267,7 @@ const VoiceWidget: React.FC<VoiceWidgetProps> = ({ businessId, open: controlledO
   };
 
   const captureAndSendFrame = () => {
-    if (!videoRef.current || !canvasRef.current || !sessionPromiseRef.current) return;
+    if (!videoRef.current || !canvasRef.current || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
     
     const ctx = canvasRef.current.getContext('2d');
     if (!ctx) return;
@@ -262,217 +280,317 @@ const VoiceWidget: React.FC<VoiceWidgetProps> = ({ businessId, open: controlledO
     // Convert to base64 jpeg
     const base64Data = canvasRef.current.toDataURL('image/jpeg', 0.6).split(',')[1];
 
-    sessionPromiseRef.current.then(session => {
-      try {
-          session.sendRealtimeInput({ 
-            media: { 
-              mimeType: 'image/jpeg', 
-              data: base64Data 
-            } 
-          });
-      } catch (e) {
-        console.error("Error sending frame:", e);
-      }
-    });
+    try {
+      wsRef.current.send(JSON.stringify({
+        type: 'input_image',
+        image: {
+          data: base64Data,
+          mime_type: 'image/jpeg'
+        }
+      }));
+    } catch (e) {
+      console.error("Error sending frame:", e);
+    }
   };
 
+  const sendJson = useCallback((payload: any) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(payload));
+    }
+  }, []);
+
+  const appendUserMessage = useCallback((text: string) => {
+    if (!text) return;
+    setMessages(prev => [...prev, {
+      id: Date.now().toString() + 'user',
+      role: 'user',
+      text,
+      timestamp: new Date()
+    }]);
+  }, []);
+
+  const appendAssistantMessage = useCallback((text: string) => {
+    if (!text) return;
+    setMessages(prev => {
+      const last = prev[prev.length - 1];
+      if (last && last.role === 'assistant' && last.id === pendingAssistantIdRef.current) {
+        return [...prev.slice(0, -1), { ...last, text: last.text + text }];
+      }
+      const id = Date.now().toString() + 'ai';
+      pendingAssistantIdRef.current = id;
+      return [...prev, { id, role: 'assistant', text, timestamp: new Date() }];
+    });
+  }, []);
+
+  const handleToolCall = useCallback((name: string, toolCallId: string, argsRaw: any) => {
+    if (!businessConfig) return;
+
+    let parsedArgs: any = argsRaw;
+    if (typeof argsRaw === 'string') {
+      try { parsedArgs = JSON.parse(argsRaw); } catch (e) { parsedArgs = argsRaw; }
+    }
+
+    if (name === 'bookAppointment') {
+      const bookingResult = handleBookingRequest(businessConfig, parsedArgs as BookingDetails);
+      setMessages(prev => [...prev, {
+        id: Date.now().toString() + 'sys',
+        role: 'system',
+        text: bookingResult.message,
+        timestamp: new Date()
+      }]);
+
+      sendJson({
+        type: 'input_tool_output',
+        tool_call_id: toolCallId,
+        output: JSON.stringify({
+          success: bookingResult.success,
+          confirmationId: bookingResult.confirmationId,
+          message: bookingResult.message
+        })
+      });
+    } else if (name === 'requestCamera') {
+      setCameraRequestOpen(true);
+      sendJson({
+        type: 'input_tool_output',
+        tool_call_id: toolCallId,
+        output: JSON.stringify({ result: 'Camera prompt shown to user' })
+      });
+    }
+  }, [businessConfig, sendJson]);
+
+  const handleServerEvent = useCallback(async (event: OpenAIRealtimeEvent) => {
+    switch (event.type) {
+      case 'response.created':
+        pendingAssistantIdRef.current = null;
+        break;
+      case 'response.output_text.delta':
+        appendAssistantMessage(event.delta || event.text || '');
+        break;
+      case 'response.output_audio.delta': {
+        const audioData = event.delta || event.audio || event.output_audio;
+        if (audioData && outputContextRef.current) {
+          audioInputSubduedRef.current = false;
+          const ctx = outputContextRef.current;
+          nextStartTimeRef.current = Math.max(nextStartTimeRef.current, ctx.currentTime);
+
+          try {
+            const audioBuffer = await decodeAudioData(decodeBase64(audioData), ctx, 24000);
+            const source = ctx.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(ctx.destination);
+            source.start(nextStartTimeRef.current);
+            nextStartTimeRef.current += audioBuffer.duration;
+            sourcesRef.current.add(source);
+            source.onended = () => sourcesRef.current.delete(source);
+          } catch (err) {
+            console.error('Failed to play audio chunk', err);
+          }
+        }
+        break;
+      }
+      case 'input_audio_buffer.speech_started':
+        stopAudioPlayback();
+        break;
+      case 'conversation.item.input_audio_transcription.completed':
+        appendUserMessage(event.transcript || event.text || '');
+        break;
+      case 'response.output_tool_calls': {
+        const calls = event.output_tool_calls || event.tool_calls || [];
+        calls.forEach((tc: any) => {
+          handleToolCall(tc.name, tc.id, tc.arguments || tc.args || tc.input);
+        });
+        break;
+      }
+      case 'response.output_tool_call.delta': {
+        const call = event.delta?.tool_call || event.tool_call;
+        if (call?.id) {
+          const existing = toolCallBuffersRef.current[call.id] || '';
+          const next = existing + (call.arguments ?? call.args ?? '');
+          toolCallBuffersRef.current[call.id] = next;
+          if (call.status === 'completed' || call.is_final) {
+            handleToolCall(call.name, call.id, next);
+            delete toolCallBuffersRef.current[call.id];
+          }
+        }
+        break;
+      }
+      case 'response.error':
+      case 'error':
+        console.error("[VOICE-WIDGET] ❌ OpenAI Live Error:", event);
+        setConnectionState(ConnectionState.ERROR);
+        alert(`OpenAI Live connection error: ${event.error?.message || event.message || 'Unknown error'}. Check console for details.`);
+        stopSession();
+        break;
+      default:
+        break;
+    }
+  }, [appendAssistantMessage, appendUserMessage, handleToolCall, stopAudioPlayback, stopSession]);
+
   // --- Connection Handler ---
-  const connectToGemini = async () => {
+  const connectToOpenAI = async () => {
     try {
       if (!businessConfig) {
         throw new Error("Business config not loaded yet.");
       }
 
       setConnectionState(ConnectionState.CONNECTING);
-      setMessages([]); 
+      setMessages([]);
 
-      const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        throw new Error("API Key not found in environment.");
+      // Determine the correct proxy URLs based on environment (HTTP for session fetch, WS for live audio)
+      let httpProxyUrl: string;
+      let wsProxyUrl: string;
+      
+      // Check for explicit environment variable override
+      const envProxy = import.meta.env.VITE_OPENAI_REALTIME_URL || (import.meta.env as any).VITE_OPENAI_PROXY_URL;
+      const isLocalDev = window.location.hostname === 'localhost' || 
+                          window.location.hostname === '127.0.0.1' ||
+                          window.location.hostname.includes('localhost');
+
+      if (envProxy) {
+        if (envProxy.startsWith('ws')) {
+          wsProxyUrl = envProxy;
+          httpProxyUrl = envProxy.replace(/^ws/, 'http');
+        } else {
+          httpProxyUrl = envProxy;
+          wsProxyUrl = envProxy.replace(/^http/, 'ws');
+        }
+      } else if (isLocalDev) {
+        // Use Firebase Functions emulator URL for local development
+        httpProxyUrl = 'http://127.0.0.1:5001/gen-lang-client-0046334557/us-central1/openaiRealtimeProxy';
+        wsProxyUrl = 'ws://127.0.0.1:5001/gen-lang-client-0046334557/us-central1/openaiRealtimeProxy';
+      } else {
+        // Production: use the rewrite URL via Firebase Hosting
+        const baseUrl = `${window.location.protocol}//${window.location.host}/api/openai-realtime-proxy`;
+        httpProxyUrl = baseUrl;
+        wsProxyUrl = baseUrl.replace(/^http/, 'ws');
       }
-
-      const ai = new GoogleGenAI({ apiKey });
       
-      // Audio Setup
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      audioContextRef.current = new AudioContextClass({ sampleRate: 16000 });
-      outputContextRef.current = new AudioContextClass({ sampleRate: 24000 });
-      
-      const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      streamRef.current = audioStream;
+      console.log('[VOICE-WIDGET] 🔌 Connecting to OpenAI Live...');
+      console.log('[VOICE-WIDGET] 📍 HTTP URL (session):', httpProxyUrl);
+      console.log('[VOICE-WIDGET] 📍 WS URL (proxy):', wsProxyUrl);
+      console.log('[VOICE-WIDGET] 🌐 Hostname:', window.location.hostname);
+      console.log('[VOICE-WIDGET] 🔧 Is Local Dev:', isLocalDev);
+      console.log('[VOICE-WIDGET] 🪪 Fetching session/client_id from proxy...');
 
-      // Generate system prompt from config
-      const systemPrompt = generateSystemPrompt(businessConfig);
-      
-      // Create config-aware booking function
-      const bookingFunction = createBookingFunction(businessConfig);
+      const sessionResponse = await fetch(httpProxyUrl, { method: 'POST' });
+      if (!sessionResponse.ok) {
+        throw new Error(`Proxy session request failed: ${sessionResponse.status} ${sessionResponse.statusText}`);
+      }
+      const session = await sessionResponse.json();
+      const clientId = session?.client_id || session?.clientId || (crypto as any).randomUUID?.() || `client-${Date.now()}`;
 
-      const requestCameraFunction: FunctionDeclaration = {
-        name: 'requestCamera',
-        description: 'Request the user to turn on their camera for a visual skin or body analysis.',
-        parameters: {
-          type: Type.OBJECT,
-          properties: {
-            reason: { type: Type.STRING, description: 'The reason for requesting the camera.' }
+      const connectionUrl = `${wsProxyUrl}?client_id=${encodeURIComponent(clientId)}`;
+      console.log('[VOICE-WIDGET] 🚀 Creating WebSocket connection...');
+      console.log('[VOICE-WIDGET] 🪪 client_id:', clientId);
+      console.log('[VOICE-WIDGET] 📍 Final WS URL:', connectionUrl);
+
+      const ws = new WebSocket(connectionUrl);
+      console.log('[VOICE-WIDGET] 📡 WebSocket created, readyState:', ws.readyState, '(0=CONNECTING, 1=OPEN, 2=CLOSING, 3=CLOSED)');
+      ws.binaryType = 'arraybuffer';
+      wsRef.current = ws;
+
+      ws.onopen = async () => {
+        console.log('[VOICE-WIDGET] ✅ OpenAI Live connection opened!');
+        setConnectionState(ConnectionState.CONNECTED);
+
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        audioContextRef.current = new AudioContextClass({ sampleRate: 24000 });
+        outputContextRef.current = new AudioContextClass({ sampleRate: 24000 });
+
+        try {
+          const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          streamRef.current = audioStream;
+        } catch (err) {
+          console.error('Failed to access microphone', err);
+          alert('Could not access microphone. Please check permissions.');
+          stopSession();
+          return;
+        }
+
+        const systemPrompt = generateSystemPrompt(businessConfig);
+        const bookingFunction = createBookingFunction(businessConfig);
+
+        sendJson({
+          type: 'session.update',
+          session: {
+            instructions: systemPrompt,
+            modalities: ['text', 'audio'],
+            input_audio_format: 'pcm16',
+            output_audio_format: 'pcm16',
+            voice: 'alloy',
+            tool_choice: 'auto',
+            turn_detection: { type: 'server_vad', threshold: 0.5, silence_duration_ms: 700, create_response: true },
+            tools: [
+              {
+                name: bookingFunction.name,
+                description: bookingFunction.description,
+                parameters: bookingFunction.parameters
+              },
+              {
+                name: requestCameraFunction.name,
+                description: requestCameraFunction.description,
+                parameters: requestCameraFunction.parameters
+              }
+            ]
           }
+        });
+
+        // Audio Pipeline
+        if (!audioContextRef.current || !streamRef.current) return;
+
+        inputSourceRef.current = audioContextRef.current.createMediaStreamSource(streamRef.current);
+        processorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
+
+        processorRef.current.onaudioprocess = (e) => {
+          if (audioInputSubduedRef.current || wsRef.current?.readyState !== WebSocket.OPEN) return;
+
+          const inputData = e.inputBuffer.getChannelData(0);
+          const pcmBlob = createPCMBlob(inputData, audioContextRef.current?.sampleRate || 24000);
+
+          sendJson({ type: 'input_audio_buffer.append', audio: pcmBlob.data });
+
+          let sum = 0;
+          for (let i = 0; i < inputData.length; i++) sum += inputData[i] * inputData[i];
+          setCurrentVolume(Math.sqrt(sum / inputData.length));
+        };
+
+        inputSourceRef.current.connect(processorRef.current);
+        processorRef.current.connect(audioContextRef.current.destination);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const textData = typeof event.data === 'string'
+            ? event.data
+            : new TextDecoder().decode(event.data as ArrayBuffer);
+          const payload: OpenAIRealtimeEvent = JSON.parse(textData);
+          handleServerEvent(payload);
+        } catch (err) {
+          console.error('[VOICE-WIDGET] Failed to process server event', err);
         }
       };
 
-      const sessionPromise = ai.live.connect({
-        model: 'gemini-2.5-flash-native-audio-preview-09-2025',
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } }
-          },
-          systemInstruction: systemPrompt,
-          tools: [{ functionDeclarations: [bookingFunction, requestCameraFunction] }],
-          inputAudioTranscription: {},
-          outputAudioTranscription: {},
-        },
-        callbacks: {
-          onopen: () => {
-            setConnectionState(ConnectionState.CONNECTED);
-            
-            // Audio Pipeline
-            if (!audioContextRef.current || !streamRef.current) return;
-            
-            inputSourceRef.current = audioContextRef.current.createMediaStreamSource(streamRef.current);
-            processorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
-            
-            processorRef.current.onaudioprocess = (e) => {
-              if (audioInputSubduedRef.current) return;
+      ws.onclose = (event) => {
+        console.log('[VOICE-WIDGET] 🔌 WebSocket closed', {
+          code: event.code,
+          reason: event.reason,
+          wasClean: event.wasClean
+        });
+        setConnectionState(ConnectionState.DISCONNECTED);
+      };
 
-              const inputData = e.inputBuffer.getChannelData(0);
-              const pcmBlob = createPCMBlob(inputData);
-              
-              sessionPromise.then(session => {
-                session.sendRealtimeInput({ media: pcmBlob });
-              });
-              
-              let sum = 0;
-              for(let i=0; i<inputData.length; i++) sum += inputData[i] * inputData[i];
-              setCurrentVolume(Math.sqrt(sum / inputData.length));
-            };
-            
-            inputSourceRef.current.connect(processorRef.current);
-            processorRef.current.connect(audioContextRef.current.destination);
-          },
-          onmessage: async (msg: LiveServerMessage) => {
-             // Transcription
-             if (msg.serverContent?.inputTranscription?.text) {
-                const text = msg.serverContent.inputTranscription.text;
-                setMessages(prev => {
-                   const last = prev[prev.length - 1];
-                   if (last && last.role === 'user') {
-                       return [...prev.slice(0, -1), { ...last, text: last.text + text }];
-                   }
-                   return [...prev, {
-                       id: Date.now().toString() + 'user',
-                       role: 'user',
-                       text: text,
-                       timestamp: new Date()
-                   }];
-                });
-             }
-             
-             if (msg.serverContent?.outputTranscription?.text) {
-                 const text = msg.serverContent.outputTranscription.text;
-                 setMessages(prev => {
-                    const last = prev[prev.length - 1];
-                    if (last && last.role === 'assistant') {
-                        return [...prev.slice(0, -1), { ...last, text: last.text + text }];
-                    }
-                    return [...prev, {
-                        id: Date.now().toString() + 'ai',
-                        role: 'assistant',
-                        text: text,
-                        timestamp: new Date()
-                    }];
-                 });
-             }
-
-             // Audio
-             const audioData = msg.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
-             if (audioData && outputContextRef.current) {
-                 audioInputSubduedRef.current = false;
-                 
-                 const ctx = outputContextRef.current;
-                 nextStartTimeRef.current = Math.max(nextStartTimeRef.current, ctx.currentTime);
-                 
-                 const audioBuffer = await decodeAudioData(decodeBase64(audioData), ctx);
-                 const source = ctx.createBufferSource();
-                 source.buffer = audioBuffer;
-                 source.connect(ctx.destination);
-                 source.start(nextStartTimeRef.current);
-                 nextStartTimeRef.current += audioBuffer.duration;
-                 sourcesRef.current.add(source);
-                 source.onended = () => sourcesRef.current.delete(source);
-             }
-
-             // Interruption
-             if (msg.serverContent?.interrupted) {
-                 stopAudioPlayback();
-             }
-
-             // Tool Calls
-             if (msg.toolCall && businessConfig) {
-                for (const fc of msg.toolCall.functionCalls) {
-                   if (fc.name === 'bookAppointment') {
-                       const args = fc.args as unknown as BookingDetails;
-                       const bookingResult = handleBookingRequest(businessConfig, args);
-                       
-                       setMessages(prev => [...prev, {
-                           id: Date.now().toString() + 'sys',
-                           role: 'system',
-                           text: bookingResult.message,
-                           timestamp: new Date()
-                       }]);
-                       
-                       sessionPromise.then(session => {
-                           session.sendToolResponse({
-                               functionResponses: {
-                                   id: fc.id,
-                                   name: fc.name,
-                                   response: { 
-                                       result: bookingResult.success 
-                                           ? `Success: ${bookingResult.message}` 
-                                           : `Error: ${bookingResult.message}`,
-                                       success: bookingResult.success,
-                                       confirmationId: bookingResult.confirmationId
-                                   }
-                               }
-                           })
-                       });
-                   } else if (fc.name === 'requestCamera') {
-                       setCameraRequestOpen(true);
-                       sessionPromise.then(session => {
-                           session.sendToolResponse({
-                               functionResponses: {
-                                   id: fc.id,
-                                   name: fc.name,
-                                   response: { result: "User Prompted" }
-                               }
-                           })
-                       });
-                   }
-                }
-             }
-          },
-          onclose: () => {
-             setConnectionState(ConnectionState.DISCONNECTED);
-          },
-          onerror: (err) => {
-             console.error("Gemini Live Error:", err);
-             setConnectionState(ConnectionState.ERROR);
-             stopSession();
-          }
-        }
-      });
-      sessionPromiseRef.current = sessionPromise;
-
-    } catch (error) {
-      console.error("Connection failed", error);
+      ws.onerror = (err) => {
+        console.error("[VOICE-WIDGET] ❌ OpenAI Live WebSocket Error:", err);
+        console.error("[VOICE-WIDGET] ❌ Failed URL:", connectionUrl);
+        console.error("[VOICE-WIDGET] ❌ WebSocket readyState:", ws.readyState);
+        setConnectionState(ConnectionState.ERROR);
+        alert(`OpenAI Live connection error. Check console for details. URL: ${connectionUrl}`);
+        stopSession();
+      };
+    } catch (error: any) {
+      console.error("[VOICE-WIDGET] ❌ Connection failed:", error);
+      const errorMsg = error?.message || 'Unknown connection error';
+      alert(`Failed to connect to OpenAI Live: ${errorMsg}. Check console for details.`);
       setConnectionState(ConnectionState.ERROR);
     }
   };
@@ -494,7 +612,7 @@ const VoiceWidget: React.FC<VoiceWidgetProps> = ({ businessId, open: controlledO
               alert('Business configuration is still loading. Please wait a moment.');
               return;
           }
-          connectToGemini();
+          connectToOpenAI();
       }
   };
 
@@ -507,17 +625,11 @@ const VoiceWidget: React.FC<VoiceWidgetProps> = ({ businessId, open: controlledO
   };
 
   const handleSendText = () => {
-      if (!inputText.trim() || connectionState !== ConnectionState.CONNECTED || !sessionPromiseRef.current) return;
+      if (!inputText.trim() || connectionState !== ConnectionState.CONNECTED || !wsRef.current) return;
       
       const text = inputText.trim();
       
-      setMessages(prev => [...prev, {
-          id: Date.now().toString() + 'user',
-          role: 'user',
-          text: text,
-          timestamp: new Date()
-      }]);
-      
+      appendUserMessage(text);
       setInputText('');
       stopAudioPlayback();
       audioInputSubduedRef.current = true;
@@ -525,22 +637,10 @@ const VoiceWidget: React.FC<VoiceWidgetProps> = ({ businessId, open: controlledO
       if (subduedTimeoutRef.current) clearTimeout(subduedTimeoutRef.current);
       subduedTimeoutRef.current = setTimeout(() => {
           audioInputSubduedRef.current = false;
-      }, 2000);
+      }, 1500);
 
-      sessionPromiseRef.current.then(session => {
-          const s = session as any;
-          if (s.send) {
-              s.send({
-                  clientContent: {
-                      turns: [{ role: 'user', parts: [{ text: text }] }],
-                      turnComplete: true
-                  }
-              });
-          } else {
-              console.warn("Text input might not be supported in this SDK version.");
-              audioInputSubduedRef.current = false;
-          }
-      });
+      sendJson({ type: 'input_text', text });
+      sendJson({ type: 'response.create', response: { modalities: ['text', 'audio'] } });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -768,10 +868,10 @@ const VoiceWidget: React.FC<VoiceWidgetProps> = ({ businessId, open: controlledO
                                         <span>Start Conversation</span>
                                     </>
                                 )}
-                            </button>
-                             <div className="flex items-center space-x-2 opacity-30 grayscale hover:grayscale-0 transition-all duration-500">
-                                 <img src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg" className="w-4 h-4" alt="Gemini" />
-                                 <p className="text-[10px] text-slate-500 font-medium tracking-wide">Powered by Gemini</p>
+                             </button>
+                             <div className="flex items-center space-x-2 opacity-30 hover:opacity-60 transition-all duration-500">
+                                 <span className="w-4 h-4 rounded-full border border-slate-300 flex items-center justify-center text-[10px] font-bold text-slate-500">O</span>
+                                 <p className="text-[10px] text-slate-500 font-medium tracking-wide">Powered by OpenAI Live</p>
                              </div>
                         </div>
                      )}

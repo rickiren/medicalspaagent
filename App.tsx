@@ -73,7 +73,7 @@ function AppContent() {
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E8B4B8] opacity-75"></span>
                           <span className="relative inline-flex rounded-full h-2 w-2 bg-[#C06C84]"></span>
                         </span>
-                        Gemini Live Powered
+                        OpenAI Live Powered
                     </div>
 
                     <h1 className="font-display text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight mb-8 leading-[1.1]">

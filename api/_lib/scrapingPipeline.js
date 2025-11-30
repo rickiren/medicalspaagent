@@ -1,5 +1,5 @@
-// JavaScript version of scraping pipeline for Vercel serverless functions
-// All utils are in the same _lib folder so they're available to serverless functions
+// JavaScript version of scraping pipeline for Firebase Cloud Functions
+// All utils are in the same _lib folder so they're available to cloud functions
 
 import { scrapeWebsite } from './scraper.js';
 import { normalizeToBusinessConfig } from './normalizer.js';

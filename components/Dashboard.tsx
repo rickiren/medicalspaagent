@@ -6,9 +6,10 @@ import WebsiteScraper from './WebsiteScraper';
 import WidgetPreview from './WidgetPreview';
 import EmailGenerator from './EmailGenerator';
 import LeadsList from './LeadsList';
+import InstagramOutreachBot from './InstagramOutreachBot';
 
-type View = 'list' | 'edit' | 'create' | 'scrape' | 'preview' | 'email' | 'leads';
-type Tab = 'businesses' | 'leads';
+type View = 'list' | 'edit' | 'create' | 'scrape' | 'preview' | 'email' | 'leads' | 'instagram';
+type Tab = 'businesses' | 'leads' | 'instagram';
 
 interface DashboardProps {
   onBack?: () => void;
@@ -166,6 +167,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onBack }) => {
               >
                 Leads
               </button>
+              <button
+                onClick={() => {
+                  setActiveTab('instagram');
+                  setView('instagram');
+                }}
+                className={`px-4 py-2 text-sm font-semibold transition-all ${
+                  activeTab === 'instagram'
+                    ? 'text-white border-b-2 border-rose-500'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Instagram Outreach
+              </button>
             </div>
           </div>
         </div>
@@ -190,6 +204,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onBack }) => {
           )}
           {view === 'leads' && activeTab === 'leads' && (
             <LeadsList onScrapeQueue={() => {}} />
+          )}
+          {view === 'instagram' && activeTab === 'instagram' && (
+            <InstagramOutreachBot />
           )}
           {view === 'scrape' && (
             <WebsiteScraper

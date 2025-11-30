@@ -4,7 +4,10 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "npm run kill-ports && concurrently -n frontend,functions -c blue,green \"vite\" \"firebase emulators:start --only functions\"",
+    "dev:frontend": "vite",
+    "dev:functions": "firebase emulators:start --only functions",
+    "kill-ports": "lsof -ti:5001 | xargs kill -9 2>/dev/null; lsof -ti:4000 | xargs kill -9 2>/dev/null; lsof -ti:4400 | xargs kill -9 2>/dev/null; lsof -ti:4500 | xargs kill -9 2>/dev/null; lsof -ti:9299 | xargs kill -9 2>/dev/null; lsof -ti:9499 | xargs kill -9 2>/dev/null; true",
     "build": "vite build --emptyOutDir",
     "preview": "vite preview"
   },
@@ -25,6 +28,7 @@
     "@types/node": "^22.14.0",
     "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^5.0.0",
+    "concurrently": "^9.2.1",
     "dotenv": "^17.2.3",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"

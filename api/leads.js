@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const { data, error } = await client
         .from('leads')
-        .select('id, name, website, domain, phone, email, status, created_at, updated_at')
+        .select('id, name, website, domain, phone, email, status, instagram_handle, personalized_message, outreach_status, created_at, updated_at')
         .order('created_at', { ascending: false });
 
       if (error) {

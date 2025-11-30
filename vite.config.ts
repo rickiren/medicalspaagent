@@ -175,6 +175,40 @@ export default defineConfig(({ mode }) => {
                 return;
               }
 
+              // Handle GET /api/leads
+              if (method === 'GET' && url === '/api/leads') {
+                try {
+                  if (!supabase) {
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ 
+                      error: 'Supabase not configured',
+                      message: 'Missing SUPABASE_URL or SUPABASE_ANON_KEY environment variables'
+                    }));
+                    return;
+                  }
+
+                  const { data, error } = await supabase
+                    .from('leads')
+                    .select('id, name, website, domain, phone, email, status, instagram_handle, personalized_message, outreach_status, follow_status, created_at, updated_at')
+                    .order('created_at', { ascending: false });
+
+                  if (error) {
+                    console.error('Supabase error:', error);
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: error.message }));
+                    return;
+                  }
+
+                  res.writeHead(200, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify(data || []));
+                } catch (error: any) {
+                  console.error('Error loading leads:', error);
+                  res.writeHead(500, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ error: error.message || 'Failed to load leads' }));
+                }
+                return;
+              }
+
               // Handle POST /api/businesses (create or update)
               if (method === 'POST' && url === '/api/businesses') {
                 let body = '';
@@ -364,6 +398,113 @@ export default defineConfig(({ mode }) => {
                   } catch (error: any) {
                     res.writeHead(500, { 'Content-Type': 'application/json' });
                     res.end(JSON.stringify({ error: error.message || 'Scraping failed' }));
+                  }
+                });
+                return;
+              }
+
+              // Handle GET /api/instagram-outreach/get-next-lead
+              if (method === 'GET' && url === '/api/instagram-outreach/get-next-lead') {
+                try {
+                  if (!supabase) {
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ 
+                      error: 'Supabase not configured',
+                      message: 'Missing SUPABASE_URL or SUPABASE_ANON_KEY environment variables'
+                    }));
+                    return;
+                  }
+
+                  const { data, error } = await supabase
+                    .from('leads')
+                    .select('id, instagram_handle, personalized_message')
+                    .eq('outreach_status', 'pending')
+                    .not('instagram_handle', 'is', null)
+                    .not('personalized_message', 'is', null)
+                    .order('created_at', { ascending: true })
+                    .limit(1)
+                    .single();
+
+                  if (error) {
+                    if (error.code === 'PGRST116') {
+                      // No rows found
+                      res.writeHead(200, { 'Content-Type': 'application/json' });
+                      res.end(JSON.stringify({ lead: null }));
+                      return;
+                    }
+                    throw error;
+                  }
+
+                  res.writeHead(200, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ lead: data }));
+                } catch (error: any) {
+                  console.error('Error fetching next Instagram lead:', error);
+                  res.writeHead(500, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ error: error.message || 'Failed to fetch next lead' }));
+                }
+                return;
+              }
+
+              // Handle POST /api/instagram-outreach/mark-sent
+              if (method === 'POST' && url === '/api/instagram-outreach/mark-sent') {
+                let body = '';
+                req.on('data', (chunk) => {
+                  body += chunk.toString();
+                });
+                req.on('end', async () => {
+                  try {
+                    if (!supabase) {
+                      res.writeHead(500, { 'Content-Type': 'application/json' });
+                      res.end(JSON.stringify({ 
+                        error: 'Supabase not configured',
+                        message: 'Missing SUPABASE_URL or SUPABASE_ANON_KEY environment variables'
+                      }));
+                      return;
+                    }
+
+                    const payload = JSON.parse(body);
+                    const { id, status = 'sent', type = 'outreach' } = payload;
+
+                    if (!id) {
+                      res.writeHead(400, { 'Content-Type': 'application/json' });
+                      res.end(JSON.stringify({ error: 'Missing required field: id' }));
+                      return;
+                    }
+
+                    if (status !== 'sent' && status !== 'failed' && status !== 'pending') {
+                      res.writeHead(400, { 'Content-Type': 'application/json' });
+                      res.end(JSON.stringify({ error: 'Status must be "sent", "failed", or "pending"' }));
+                      return;
+                    }
+
+                    // Update outreach_status or follow_status based on type
+                    const updateField = type === 'follow' ? 'follow_status' : 'outreach_status';
+                    // For follow type, map 'sent' to 'followed'
+                    const updateValue = (type === 'follow' && status === 'sent') ? 'followed' : status;
+
+                    const { data, error } = await supabase
+                      .from('leads')
+                      .update({ [updateField]: updateValue })
+                      .eq('id', id)
+                      .select('id')
+                      .single();
+
+                    if (error) {
+                      throw error;
+                    }
+
+                    if (!data) {
+                      res.writeHead(404, { 'Content-Type': 'application/json' });
+                      res.end(JSON.stringify({ error: 'Lead not found' }));
+                      return;
+                    }
+
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true, id: data.id }));
+                  } catch (error: any) {
+                    console.error('Error marking Instagram lead:', error);
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ error: error.message || 'Failed to mark lead' }));
                   }
                 });
                 return;

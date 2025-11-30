@@ -8,6 +8,9 @@ interface Lead {
   phone: string | null;
   email: string | null;
   status: string;
+  instagram_handle: string | null;
+  personalized_message: string | null;
+  outreach_status: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -378,6 +381,9 @@ const LeadsList: React.FC<LeadsListProps> = ({ onScrapeQueue }) => {
                   Status
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                  Instagram Outreach
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-slate-300 uppercase tracking-wider">
                   Scrape Status
                 </th>
                 <th className="px-6 py-4 text-right text-xs font-semibold text-slate-300 uppercase tracking-wider">
@@ -424,6 +430,24 @@ const LeadsList: React.FC<LeadsListProps> = ({ onScrapeQueue }) => {
                       }`}>
                         {lead.status || 'new'}
                       </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {lead.instagram_handle ? (
+                        <div className="flex flex-col gap-1">
+                          <div className="text-xs text-pink-400">@{lead.instagram_handle.replace('@', '')}</div>
+                          {lead.outreach_status && (
+                            <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                              lead.outreach_status === 'sent' ? 'bg-green-500/20 text-green-300' :
+                              lead.outreach_status === 'failed' ? 'bg-red-500/20 text-red-300' :
+                              'bg-yellow-500/20 text-yellow-300'
+                            }`}>
+                              {lead.outreach_status}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-slate-500 text-xs">—</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {queueItem ? (

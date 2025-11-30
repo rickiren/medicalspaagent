@@ -34,23 +34,23 @@
      true
      ```
 
-## Step 3: Add Service Role Key to Vercel
+## Step 3: Add Service Role Key to Firebase
 
 1. Go to Supabase Dashboard → **Settings** → **API**
 2. Copy the **"service_role"** key (NOT the anon key - this one has more permissions)
-3. Go to Vercel Dashboard → Your Project → **Settings** → **Environment Variables**
-4. Add:
+3. Go to Firebase Console → Your Project → **Functions** → **Configuration**
+4. Add environment variable:
    - **Name:** `SUPABASE_SERVICE_ROLE_KEY`
    - **Value:** Paste the service_role key
-   - **Environment:** Select all (Production, Preview, Development)
-5. Click **"Save"**
+5. Save the configuration
 
-## Step 4: Redeploy on Vercel
+## Step 4: Redeploy on Firebase
 
 After adding the environment variable:
-1. Go to **Deployments** tab
-2. Click **"..."** on latest deployment
-3. Select **"Redeploy"**
+1. Redeploy your Firebase Functions:
+   ```bash
+   firebase deploy --only functions
+   ```
 
 ## Step 5: Test
 
@@ -63,9 +63,9 @@ After adding the environment variable:
 ## Troubleshooting
 
 **Screenshots still not showing?**
-- Check Vercel logs for errors
+- Check Firebase Functions logs for errors
 - Verify the bucket is **public**
-- Verify `SUPABASE_SERVICE_ROLE_KEY` is set in Vercel
+- Verify `SUPABASE_SERVICE_ROLE_KEY` is set in Firebase Functions environment
 - Check Supabase Storage → `screenshots` bucket to see if files are being uploaded
 
 **Getting permission errors?**

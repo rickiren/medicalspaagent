@@ -1,5 +1,3 @@
-import { Blob } from "@google/genai";
-
 /**
  * Converts a base64 string to a Uint8Array.
  */
@@ -50,10 +48,10 @@ export async function decodeAudioData(
 }
 
 /**
- * Creates a Gemini-compatible Blob from Float32 microphone data.
+ * Creates a PCM payload from Float32 microphone data.
  * Converts Float32 (-1.0 to 1.0) to Int16 PCM.
  */
-export function createPCMBlob(data: Float32Array, sampleRate: number = 16000): Blob {
+export function createPCMBlob(data: Float32Array, sampleRate: number = 24000): { data: string; mimeType: string } {
   const l = data.length;
   const int16 = new Int16Array(l);
   for (let i = 0; i < l; i++) {

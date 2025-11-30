@@ -38,8 +38,3 @@ build
 secrets/
 *.service-account.json
 *.key.json
-
-# Secrets directory
-secrets/
-*.service-account.json
-*.key.json

@@ -13,25 +13,21 @@ dotenv.config({ path: '.env' });
 console.log('🎤 Testing VoiceWidget Configuration\n');
 console.log('='.repeat(60));
 
-// Test 1: Check VITE_GEMINI_API_KEY
-console.log('\n1️⃣  Checking VITE_GEMINI_API_KEY (client-side)...');
-const viteApiKey = process.env.VITE_GEMINI_API_KEY;
+// Test 1: Check VITE_OPENAI_API_KEY
+console.log('\n1️⃣  Checking VITE_OPENAI_API_KEY (client-side)...');
+const viteApiKey = process.env.VITE_OPENAI_API_KEY;
 if (viteApiKey) {
   console.log(`   ✅ Found: ${viteApiKey.substring(0, 20)}...`);
   console.log(`   📝 Length: ${viteApiKey.length} characters`);
-  if (viteApiKey.startsWith('AIza')) {
-    console.log('   ✅ Format looks correct (starts with AIza)');
-  } else {
-    console.log('   ⚠️  Format might be incorrect (should start with AIza)');
-  }
+  console.log('   ✅ Format looks plausible');
 } else {
   console.log('   ❌ Not found - VoiceWidget will not work!');
-  console.log('   💡 Add VITE_GEMINI_API_KEY to .env.local');
+  console.log('   💡 Add VITE_OPENAI_API_KEY to .env.local');
 }
 
-// Test 2: Check GEMINI_API_KEY (server-side)
-console.log('\n2️⃣  Checking GEMINI_API_KEY (server-side)...');
-const serverApiKey = process.env.GEMINI_API_KEY;
+// Test 2: Check OPENAI_API_KEY (server-side)
+console.log('\n2️⃣  Checking OPENAI_API_KEY (server-side)...');
+const serverApiKey = process.env.OPENAI_API_KEY;
 if (serverApiKey) {
   console.log(`   ✅ Found: ${serverApiKey.substring(0, 20)}...`);
 } else {
@@ -52,22 +48,22 @@ if (viteApiKey && serverApiKey) {
 console.log('\n4️⃣  Checking .env.local file...');
 try {
   const envContent = readFileSync('.env.local', 'utf-8');
-  const hasViteKey = envContent.includes('VITE_GEMINI_API_KEY');
-  const hasServerKey = envContent.includes('GEMINI_API_KEY=');
-  const hasServiceAccount = envContent.includes('GOOGLE_APPLICATION_CREDENTIALS');
-  
+  const hasViteKey = envContent.includes('VITE_OPENAI_API_KEY');
+  const hasServerKey = envContent.includes('OPENAI_API_KEY=');
+  const hasServiceAccount = envContent.includes('GOOGLE_APPLICATION_CREDENTIALS'); // legacy
+
   if (hasViteKey) {
-    console.log('   ✅ VITE_GEMINI_API_KEY found in .env.local');
+    console.log('   ✅ VITE_OPENAI_API_KEY found in .env.local');
   } else {
-    console.log('   ❌ VITE_GEMINI_API_KEY not in .env.local');
+    console.log('   ❌ VITE_OPENAI_API_KEY not in .env.local');
   }
   
   if (hasServerKey) {
-    console.log('   ✅ GEMINI_API_KEY found in .env.local');
+    console.log('   ✅ OPENAI_API_KEY found in .env.local');
   }
   
   if (hasServiceAccount) {
-    console.log('   ✅ GOOGLE_APPLICATION_CREDENTIALS found in .env.local');
+    console.log('   ✅ GOOGLE_APPLICATION_CREDENTIALS found in .env.local (not required for OpenAI)');
   }
 } catch (error) {
   console.log(`   ❌ Error reading .env.local: ${error.message}`);
@@ -77,13 +73,13 @@ try {
 console.log('\n5️⃣  Checking VoiceWidget code...');
 try {
   const widgetCode = readFileSync('components/VoiceWidget.tsx', 'utf-8');
-  const usesViteKey = widgetCode.includes('VITE_GEMINI_API_KEY');
+  const usesViteKey = widgetCode.includes('VITE_OPENAI');
   const usesImportMeta = widgetCode.includes('import.meta.env');
   
   if (usesViteKey) {
-    console.log('   ✅ VoiceWidget uses VITE_GEMINI_API_KEY');
+    console.log('   ✅ VoiceWidget uses VITE_OPENAI_* env values');
   } else {
-    console.log('   ⚠️  VoiceWidget does not use VITE_GEMINI_API_KEY');
+    console.log('   ⚠️  VoiceWidget does not read VITE_OPENAI vars');
   }
   
   if (usesImportMeta) {
@@ -112,25 +108,24 @@ try {
 console.log('\n' + '='.repeat(60));
 console.log('\n📋 Summary:');
 if (viteApiKey) {
-  console.log('   ✅ VITE_GEMINI_API_KEY: Configured');
+  console.log('   ✅ VITE_OPENAI_API_KEY: Configured');
   console.log('   💡 VoiceWidget should work if dev server is running');
   console.log('   💡 Restart dev server after adding VITE_ variables');
 } else {
-  console.log('   ❌ VITE_GEMINI_API_KEY: Missing');
-  console.log('   💡 Add VITE_GEMINI_API_KEY=your_key to .env.local');
+  console.log('   ❌ VITE_OPENAI_API_KEY: Missing');
+  console.log('   💡 Add VITE_OPENAI_API_KEY=your_key to .env.local');
   console.log('   💡 Restart dev server after adding');
 }
 
 if (serverApiKey) {
-  console.log('   ✅ GEMINI_API_KEY: Configured (server-side)');
+  console.log('   ✅ OPENAI_API_KEY: Configured (server-side)');
 } else {
-  console.log('   ⚠️  GEMINI_API_KEY: Missing (server-side)');
+  console.log('   ⚠️  OPENAI_API_KEY: Missing (server-side)');
 }
 
 console.log('\n🔧 Next Steps:');
-console.log('   1. Ensure VITE_GEMINI_API_KEY is in .env.local');
+console.log('   1. Ensure VITE_OPENAI_API_KEY is in .env.local');
 console.log('   2. Restart your dev server: npm run dev');
 console.log('   3. Open browser console and check for errors');
 console.log('   4. Look for [VOICE-WIDGET] log messages');
 console.log('\n');
-

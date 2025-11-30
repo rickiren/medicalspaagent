@@ -58,7 +58,7 @@ export async function captureScreenshot(
     
     if (useSupabaseStorage) {
       console.log('[SCREENSHOT] Uploading to Supabase Storage...');
-      // Upload to Supabase Storage (for Vercel deployment)
+      // Upload to Supabase Storage (for Firebase deployment)
       const supabaseUrl = process.env.SUPABASE_URL;
       const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
       

@@ -45,16 +45,16 @@ export async function runScrapingPipeline(params: {
     const contactInfo = extractContactInfo(scrapeResult);
     
     // Step 5: Capture screenshot using Playwright
-    // Use Supabase Storage on Vercel, local filesystem otherwise
+    // Use Supabase Storage on Firebase, local filesystem otherwise
     let screenshotUrl: string | undefined;
     try {
       const websiteUrl = params.url.startsWith('http') ? params.url : `https://${params.url}`;
-      const useSupabaseStorage = !!process.env.VERCEL; // Use storage on Vercel
+      const useSupabaseStorage = !!process.env.FIREBASE; // Use storage on Firebase
       console.log('[PIPELINE] Starting screenshot capture:', {
         websiteUrl,
         businessId: params.businessId,
         useSupabaseStorage,
-        isVercel: !!process.env.VERCEL
+        isFirebase: !!process.env.FIREBASE
       });
       screenshotUrl = await captureScreenshot(websiteUrl, params.businessId, useSupabaseStorage) || undefined;
       console.log('[PIPELINE] Screenshot capture result:', { screenshotUrl: screenshotUrl || 'null' });
