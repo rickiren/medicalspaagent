@@ -33,8 +33,11 @@ build
 *.tmp
 *.temp
 .cache
+
+# Secrets directory
 secrets/
-*.json
+*.service-account.json
+*.key.json
 
 # Secrets directory
 secrets/
