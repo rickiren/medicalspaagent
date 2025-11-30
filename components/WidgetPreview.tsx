@@ -21,7 +21,7 @@ const WidgetPreview: React.FC<WidgetPreviewProps> = ({ businessId, businessName,
     setError(null);
     console.log('[PREVIEW] Fetching business data for:', businessId);
     try {
-      // Use businesses endpoint (works in both local and Vercel)
+      // Use businesses endpoint (works in both local and Firebase)
       const response = await fetch(`/api/businesses/${businessId}`);
       console.log('[PREVIEW] API response status:', response.status, response.statusText);
       

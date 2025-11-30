@@ -3,6 +3,7 @@ import { BusinessConfig, Service, Location, FAQ, PreviewLandingPageData } from '
 import PreviewDataViewer from './PreviewDataViewer';
 import ContactInfoViewer from './ContactInfoViewer';
 import { ContactInfo } from '../utils/contactExtractor';
+import { normalizeBusinessConfig } from '../utils/businessConfig';
 
 interface BusinessEditorProps {
   businessId: string | null;
@@ -29,12 +30,79 @@ const BusinessEditor: React.FC<BusinessEditorProps> = ({
     id: '',
     name: '',
     tagline: '',
-    services: [{ name: '', description: '', price: 0, timeMinutes: 30 }],
-    locations: [{ name: '', address: '', phone: '' }],
+    brandIdentity: {
+      tone: '',
+      voice: '',
+      keywords: [],
+      personaName: '',
+      personaBackstory: '',
+    },
+    locations: [{ name: '', address: '', phone: '', email: '', parking: '' }],
     hours: { 'mon-sun': '9am–6pm' },
+    team: [],
+    services: [
+      {
+        name: '',
+        category: '',
+        descriptionShort: '',
+        descriptionLong: '',
+        benefits: [],
+        idealCandidate: '',
+        contraindications: [],
+        preCare: [],
+        postCare: [],
+        downtime: '',
+        frequency: '',
+        durationMinutes: 30,
+        price: { startingAt: 0, range: '', perUnit: '', notes: '' },
+        faqs: [],
+        upsells: [],
+        crossSells: [],
+      },
+    ],
     faqs: [],
-    booking: { type: 'mock', requiresPayment: false },
-    aiPersonality: { tone: 'friendly', identity: 'AI Receptionist' },
+    memberships: [],
+    packages: [],
+    policies: {
+      cancellation: '',
+      noShow: '',
+      late: '',
+      refund: '',
+      children: '',
+    },
+    booking: {
+      type: 'mock',
+      requiresPayment: false,
+      depositAmount: null,
+      url: '',
+      instructions: '',
+    },
+    safety: {
+      disclaimers: [],
+      redFlags: [],
+      escalationRules: '',
+    },
+    consultationFlows: {
+      botox: '',
+      filler: '',
+      skincare: '',
+      weightLoss: '',
+      laser: '',
+    },
+    aiBehavior: {
+      tone: '',
+      identity: '',
+      speakingStyle: '',
+      greetingStyle: '',
+      salesStyle: '',
+      objectionHandling: '',
+      closingPhrases: [],
+    },
+    memory: {
+      store: ['name', 'preferences', 'pastTreatments', 'budget', 'concerns'],
+      recallRules: 'Use memory to personalize recommendations.',
+      privacyRules: 'Never store medical history or PHI.',
+    },
   });
 
   const [domain, setDomain] = useState('');
@@ -47,21 +115,11 @@ const BusinessEditor: React.FC<BusinessEditorProps> = ({
       loadBusiness();
     } else if (mode === 'create') {
       if (initialConfig) {
-        setFormData(initialConfig);
+        setFormData(normalizeBusinessConfig(initialConfig));
         setDomain(initialDomain || '');
         setLoading(false);
       } else {
-        setFormData({
-          id: '',
-          name: '',
-          tagline: '',
-          services: [{ name: '', description: '', price: 0, timeMinutes: 30 }],
-          locations: [{ name: '', address: '', phone: '' }],
-          hours: { 'mon-sun': '9am–6pm' },
-          faqs: [],
-          booking: { type: 'mock', requiresPayment: false },
-          aiPersonality: { tone: 'friendly', identity: 'AI Receptionist' },
-        });
+        setFormData(normalizeBusinessConfig({ id: '', name: '' }));
         setDomain('');
         setLoading(false);
       }
@@ -80,7 +138,7 @@ const BusinessEditor: React.FC<BusinessEditorProps> = ({
         throw new Error('Failed to load business');
       }
       const data = await response.json();
-      setFormData(data.config_json);
+      setFormData(normalizeBusinessConfig(data.config_json));
       setDomain(data.domain || '');
       setPreviewData(data.preview_data_json || null);
       setContactInfo(data.contact_info_json || null);
@@ -563,10 +621,10 @@ const BusinessEditor: React.FC<BusinessEditorProps> = ({
               <label className="block text-sm font-medium text-slate-700 mb-1">Identity</label>
               <input
                 type="text"
-                value={formData.aiPersonality.identity}
+                value={formData.aiBehavior.identity}
                 onChange={(e) => setFormData({
                   ...formData,
-                  aiPersonality: { ...formData.aiPersonality, identity: e.target.value },
+                  aiBehavior: { ...formData.aiBehavior, identity: e.target.value },
                 })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                 placeholder="AI Receptionist"
@@ -576,10 +634,10 @@ const BusinessEditor: React.FC<BusinessEditorProps> = ({
               <label className="block text-sm font-medium text-slate-700 mb-1">Tone</label>
               <input
                 type="text"
-                value={formData.aiPersonality.tone}
+                value={formData.aiBehavior.tone}
                 onChange={(e) => setFormData({
                   ...formData,
-                  aiPersonality: { ...formData.aiPersonality, tone: e.target.value },
+                  aiBehavior: { ...formData.aiBehavior, tone: e.target.value },
                 })}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                 placeholder="friendly, warm, informative"

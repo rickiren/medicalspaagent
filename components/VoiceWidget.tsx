@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GoogleGenAI, LiveServerMessage, Modality, FunctionDeclaration, Type } from "@google/genai";
 import { Message, ConnectionState, BookingDetails, BusinessConfig } from '../types';
+import { normalizeBusinessConfig } from '../utils/businessConfig';
 import { decodeBase64, decodeAudioData, createPCMBlob } from '../utils/audioUtils';
 import { generateSystemPrompt } from '../utils/generateSystemPrompt';
 import { handleBookingRequest } from '../utils/bookingHandler';
@@ -55,11 +56,23 @@ const requestCameraFunction: FunctionDeclaration = {
 
 interface VoiceWidgetProps {
   businessId?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-const VoiceWidget: React.FC<VoiceWidgetProps> = ({ businessId }) => {
+const VoiceWidget: React.FC<VoiceWidgetProps> = ({ businessId, open: controlledOpen, onOpenChange }) => {
   // --- State ---
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  
+  // Use controlled state if provided, otherwise use internal state
+  const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const setIsOpen = (value: boolean) => {
+    if (controlledOpen !== undefined) {
+      onOpenChange?.(value);
+    } else {
+      setInternalOpen(value);
+    }
+  };
   const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.DISCONNECTED);
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentVolume, setCurrentVolume] = useState(0);
@@ -110,11 +123,11 @@ const VoiceWidget: React.FC<VoiceWidgetProps> = ({ businessId }) => {
           if (!response.ok) {
             throw new Error(`Failed to fetch config: ${response.statusText}`);
           }
-          config = await response.json();
+          config = normalizeBusinessConfig(await response.json());
         } else {
           // Load from local config file
           const response = await fetch('/businessConfig.json');
-          config = await response.json();
+          config = normalizeBusinessConfig(await response.json());
         }
         
         setBusinessConfig(config);

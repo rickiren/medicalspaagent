@@ -2,22 +2,53 @@ import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+
+// Get the directory of the current file
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load .env.local file explicitly (Vite uses .env.local by default)
+dotenv.config({ path: path.resolve(__dirname, '.env.local') });
+// Also try .env as fallback
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, '.', '');
+    // Vite's loadEnv automatically loads .env.local, but we'll also check process.env
+    const env = loadEnv(mode, process.cwd(), '');
     
     // Initialize Supabase client
-    const supabaseUrl = env.SUPABASE_URL;
-    const supabaseKey = env.SUPABASE_ANON_KEY;
+    // Try loadEnv first, then fall back to process.env (which dotenv populates)
+    // Also check for VITE_ prefixed versions (for client-side variables)
+    const supabaseUrl = env.SUPABASE_URL || process.env.SUPABASE_URL || env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const supabaseKey = env.SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn('⚠️  Supabase credentials not found in environment variables.');
+      console.warn('   Make sure you have SUPABASE_URL and SUPABASE_ANON_KEY set in your .env file');
+      console.warn('   Current values:', {
+        url: supabaseUrl ? 'SET' : 'MISSING',
+        key: supabaseKey ? 'SET' : 'MISSING'
+      });
+    } else {
+      console.log('✅ Supabase credentials loaded successfully');
+    }
+    
     const supabase = supabaseUrl && supabaseKey 
       ? createClient(supabaseUrl, supabaseKey)
       : null;
     
     return {
+      base: '/',
       server: {
         port: 3000,
         host: '0.0.0.0',
         middlewareMode: false,
+      },
+      build: {
+        outDir: 'dist',
+        emptyOutDir: true,
       },
       plugins: [
         react(),
@@ -27,8 +58,12 @@ export default defineConfig(({ mode }) => {
             server.middlewares.use(async (req, res, next) => {
               if (!supabase) {
                 if (req.url?.startsWith('/api/')) {
+                  console.error('Supabase not configured. Missing SUPABASE_URL or SUPABASE_ANON_KEY');
                   res.writeHead(500, { 'Content-Type': 'application/json' });
-                  res.end(JSON.stringify({ error: 'Supabase not configured' }));
+                  res.end(JSON.stringify({ 
+                    error: 'Supabase not configured',
+                    message: 'Missing SUPABASE_URL or SUPABASE_ANON_KEY environment variables'
+                  }));
                   return;
                 }
                 next();
@@ -74,20 +109,41 @@ export default defineConfig(({ mode }) => {
               // Handle GET /api/businesses (list all)
               if (method === 'GET' && url === '/api/businesses') {
                 try {
+                  if (!supabase) {
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ 
+                      error: 'Supabase not configured',
+                      message: 'Missing SUPABASE_URL or SUPABASE_ANON_KEY environment variables'
+                    }));
+                    return;
+                  }
+
                   const { data, error } = await supabase
                     .from('businesses')
                     .select('id, name, domain, created_at, updated_at')
                     .order('created_at', { ascending: false });
 
                   if (error) {
-                    throw error;
+                    console.error('Supabase query error:', error);
+                    res.writeHead(500, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ 
+                      error: 'Failed to load businesses',
+                      details: error.message,
+                      code: error.code,
+                      hint: error.hint || null
+                    }));
+                    return;
                   }
 
                   res.writeHead(200, { 'Content-Type': 'application/json' });
                   res.end(JSON.stringify(data || []));
                 } catch (error: any) {
+                  console.error('Error loading businesses:', error);
                   res.writeHead(500, { 'Content-Type': 'application/json' });
-                  res.end(JSON.stringify({ error: 'Failed to load businesses' }));
+                  res.end(JSON.stringify({ 
+                    error: 'Failed to load businesses',
+                    details: error.message || 'Unknown error'
+                  }));
                 }
                 return;
               }
@@ -255,7 +311,7 @@ export default defineConfig(({ mode }) => {
                     }
 
                     // Import and run scraping pipeline
-                    const { runScrapingPipeline } = await import('./utils/scrapingPipeline.js');
+                    const { runScrapingPipeline } = await import('./api/_lib/scrapingPipeline.js');
                     const result = await runScrapingPipeline({
                       url: websiteUrl,
                       businessId,
@@ -320,7 +376,8 @@ export default defineConfig(({ mode }) => {
       ],
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
+        __BUILD_TIMESTAMP__: JSON.stringify(Date.now())
       },
       resolve: {
         alias: {
