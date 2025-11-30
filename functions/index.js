@@ -325,6 +325,100 @@ app.post('/scrape-website', async (req, res) => {
   }
 });
 
+// GET /api/leads - List all leads
+app.get('/leads', async (req, res) => {
+  try {
+    const client = getSupabaseClient();
+    const { data, error } = await client
+      .from('leads')
+      .select('id, name, website, domain, phone, email, status, instagram_handle, personalized_message, outreach_status, follow_status, created_at, updated_at')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Supabase error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json(data || []);
+  } catch (err) {
+    console.error('Server error:', err);
+    return res.status(500).json({ error: err.message || 'Failed to load leads' });
+  }
+});
+
+// GET /api/instagram-outreach/get-next-lead - Get next pending lead for Instagram outreach
+app.get('/instagram-outreach/get-next-lead', async (req, res) => {
+  try {
+    const client = getSupabaseClient();
+
+    const { data, error } = await client
+      .from('leads')
+      .select('id, instagram_handle, personalized_message')
+      .eq('outreach_status', 'pending')
+      .not('instagram_handle', 'is', null)
+      .not('personalized_message', 'is', null)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows found
+        return res.status(200).json({ lead: null });
+      }
+      throw error;
+    }
+
+    return res.status(200).json({ lead: data });
+  } catch (error) {
+    console.error('Error fetching next Instagram lead:', error);
+    return res.status(500).json({ error: error.message || 'Failed to fetch next lead' });
+  }
+});
+
+// POST /api/instagram-outreach/mark-sent - Mark lead as sent or failed
+app.post('/instagram-outreach/mark-sent', async (req, res) => {
+  try {
+    const { id, status = 'sent', type = 'outreach' } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ error: 'Missing required field: id' });
+    }
+
+    if (status !== 'sent' && status !== 'failed' && status !== 'pending') {
+      return res.status(400).json({ error: 'Status must be "sent", "failed", or "pending"' });
+    }
+
+    const client = getSupabaseClient();
+
+    // Update outreach_status or follow_status based on type
+    const updateField = type === 'follow' ? 'follow_status' : 'outreach_status';
+    // For follow type, map 'sent' to 'followed'
+    const updateValue = (type === 'follow' && status === 'sent') ? 'followed' : status;
+
+    const { data, error } = await client
+      .from('leads')
+      .update({ [updateField]: updateValue })
+      .eq('id', id)
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('Supabase error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    if (!data) {
+      return res.status(404).json({ error: 'Lead not found' });
+    }
+
+    return res.status(200).json({ success: true, id: data.id });
+  } catch (error) {
+    console.error('Error marking Instagram lead:', error);
+    return res.status(500).json({ error: error.message || 'Failed to mark lead' });
+  }
+});
+
 // Error handling middleware - must be after all routes
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
